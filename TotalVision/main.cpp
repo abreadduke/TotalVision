@@ -1,42 +1,64 @@
 #include <windows.h>
 #include <iostream>
+#include <vector>
+#include <tlhelp32.h>
+#include <psapi.h>
+#include <conio.h>
 
-#define WINDOW_NAME L"TotalVision"
-const int xWindowStartPos = 200;
-const int yWindowStartPos = 200;
-const int windowStartWidth = 200;
-const int windowStartHeigh = 200;
+typedef void (&PROCESSHANDLER)(HANDLE);
 
-LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
-
-WNDCLASS createMainWindowClass(const WCHAR * classname, HINSTANCE instance, WNDPROC wproc) {
-	WNDCLASS wclass = { 0 };
-	wclass.lpszClassName = classname;
-	wclass.hInstance = instance;
-	wclass.lpfnWndProc = wproc;
-	RegisterClass(&wclass);
-	return wclass;
-}
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmd, int cmdshow) {
-	WNDCLASS windowclass = createMainWindowClass(L"totalvision", hInstance, WindowProc);
-	HWND window = CreateWindowW(windowclass.lpszClassName, WINDOW_NAME, 
-		WS_OVERLAPPEDWINDOW, xWindowStartPos, yWindowStartPos, windowStartWidth, windowStartHeigh, NULL, NULL, hInstance, NULL);
-	//if (window == NULL) {
-	//	throw std::runtime_error("Can't create the window");
-	//}
-	ShowWindow(window, cmdshow);
-	MSG msg = { 0 };
-	while (GetMessage(&msg, NULL, 0, 0) > 0) {
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+std::vector<HANDLE> getAllProcs() {
+	std::vector<HANDLE> procs;
+	PROCESSENTRY32 peProcessEntry;
+	TCHAR szBuff[1024];
+	DWORD dwTemp;
+	HANDLE CONST hSnapshot = CreateToolhelp32Snapshot(
+		TH32CS_SNAPPROCESS, 0);
+	if (INVALID_HANDLE_VALUE == hSnapshot) {
+		throw std::runtime_error("Невозможно сделать снапшот процессов");
 	}
+
+	peProcessEntry.dwSize = sizeof(PROCESSENTRY32);
+	Process32First(hSnapshot, &peProcessEntry);
+	do {
+		procs.push_back(OpenProcess(PROCESS_QUERY_INFORMATION | READ_CONTROL, true, peProcessEntry.th32ProcessID));
+	} while (Process32Next(hSnapshot, &peProcessEntry));
+	CloseHandle(hSnapshot);
+	return procs;
+}
+class ProcessPrinter {
+public:
+	ProcessPrinter() {};
+	static void printProcess(HANDLE process) {
+		char filename[1024];
+		if(GetProcessImageFileNameA(process, filename, sizeof(filename)))
+			std::cout << filename << std::endl;
+	}
+};
+class ProcessVisioner {
+public:
+	ProcessVisioner() {}
+	void makeSnapshot() {
+		procs = getAllProcs();
+	}
+	void sendProcsNames(PROCESSHANDLER prochandler) {
+		for (HANDLE process : this->procs)
+			prochandler(process);
+	}
+private:
+	std::vector<HANDLE> procs;
+};
+int main() {
+	setlocale(LC_ALL, "ru");
+	ProcessVisioner visioner;
+	try {
+		visioner.makeSnapshot();
+	}
+	catch (std::runtime_error& error) {
+		std::cout << error.what() << std::endl;
+		return -1;
+	}
+	visioner.sendProcsNames(ProcessPrinter::printProcess);
+	_getch();
 	return 0;
-}
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	switch (msg) {
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
