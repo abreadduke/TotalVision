@@ -3,12 +3,13 @@
 #include <vector>
 #include <tlhelp32.h>
 #include <psapi.h>
-//#include <conio.h>
 #include <cmath>
 #include <regex>
 #include <string>
 #include <thread>
+#include <mutex>
 #include <map>
+#include <conio.h>
 
 #define BYTENEXTDIS 1024
 
@@ -66,20 +67,29 @@ private:
 class CpuAnalyzer {
 public:
 	CpuAnalyzer() {};
-	void AnalyzeCpuUsage(int delay) {
+	void MakeStatementSnapshot() {
 		FILETIME cpukernel = { 0 };
 		FILETIME cpuuser = { 0 };
 		FILETIME cpuidle = { 0 };
 		GetSystemTimes(&cpuidle, &cpukernel, &cpuuser);
-		this->cpuidletimes = cpuidle.dwLowDateTime + (cpuidle.dwHighDateTime << (sizeof(long) * 8));
-		this->cpukerneltimes = cpukernel.dwLowDateTime + (cpukernel.dwHighDateTime << (sizeof(long) * 8));
-		this->cpuusertimes = cpuuser.dwLowDateTime + (cpuuser.dwHighDateTime << (sizeof(long) * 8));
-		std::this_thread::sleep_for(std::chrono::microseconds(delay));
+		//this->cpuidletimes = cpuidle.dwLowDateTime + (cpuidle.dwHighDateTime << (sizeof(DWORD) * 8));
+		//this->cpukerneltimes = cpukernel.dwLowDateTime + (cpukernel.dwHighDateTime << (sizeof(DWORD) * 8));
+		//this->cpuusertimes = cpuuser.dwLowDateTime + (cpuuser.dwHighDateTime << (sizeof(DWORD) * 8));
+		this->cpuidletimes = cpuidle.dwLowDateTime;
+		this->cpukerneltimes = cpukernel.dwLowDateTime;
+		this->cpuusertimes = cpuuser.dwLowDateTime;
+	}
+	void AnalyzeCpuUsage() {
+		FILETIME cpukernel = { 0 };
+		FILETIME cpuuser = { 0 };
+		FILETIME cpuidle = { 0 };
 		GetSystemTimes(&cpuidle, &cpukernel, &cpuuser);
-		//std::cout << cpuidle.dwLowDateTime << '\t' << this->cpuidletimes << std::endl;
-		this->cpuidletimes = cpuidle.dwLowDateTime + (cpuidle.dwHighDateTime << (sizeof(long) * 8)) - this->cpuidletimes;
-		this->cpukerneltimes = cpukernel.dwLowDateTime + (cpukernel.dwHighDateTime << (sizeof(long) * 8)) - this->cpukerneltimes;
-		this->cpuusertimes = cpuuser.dwLowDateTime + (cpuuser.dwHighDateTime << (sizeof(long) * 8)) - this->cpuusertimes;
+		//this->cpuidletimes = cpuidle.dwLowDateTime + (cpuidle.dwHighDateTime << (sizeof(DWORD) * 8)) - this->cpuidletimes;
+		//this->cpukerneltimes = cpukernel.dwLowDateTime + (cpukernel.dwHighDateTime << (sizeof(DWORD) * 8)) - this->cpukerneltimes;
+		//this->cpuusertimes = cpuuser.dwLowDateTime + (cpuuser.dwHighDateTime << (sizeof(DWORD) * 8)) - this->cpuusertimes;
+		this->cpuidletimes = cpuidle.dwLowDateTime - this->cpuidletimes;
+		this->cpukerneltimes = cpukernel.dwLowDateTime - this->cpukerneltimes;
+		this->cpuusertimes = cpuuser.dwLowDateTime - this->cpuusertimes;
 	}
 	unsigned long long GetIdle() {
 		return this->cpuidletimes;
@@ -137,9 +147,11 @@ public:
 	std::string printProcess(ProcessVisioner &visioner) {
 		ProcessAnalyzer analyzer(visioner);
 		CpuAnalyzer cpuanalyzer;
+		cpuanalyzer.MakeStatementSnapshot();
 		analyzer.MakeStatementSnapshot();
-		//std::this_thread::sleep_for(std::chrono::milliseconds(160));
-		cpuanalyzer.AnalyzeCpuUsage(160000);
+		std::this_thread::sleep_for(std::chrono::milliseconds(160));
+		auto analyzedtimes = analyzer.AnalyzeTimes();
+		cpuanalyzer.AnalyzeCpuUsage();
 		unsigned long long cpuusagetimes = cpuanalyzer.GetKernel() + cpuanalyzer.GetUser();
 		std::string buffer;
 		//find max file path length to padding the parameters
@@ -151,7 +163,6 @@ public:
 				maxfilename = (unsigned short)std::fmaxf((float)std::regex_replace(filename, std::regex("\\\\Device\\\\HarddiskVolume3"), "C:").size(), (float)maxfilename);
 			}
 		}
-		auto analyzedtimes = analyzer.AnalyzeTimes();
 		unsigned long long allprocstimes = 0;
 		for (auto analyzedtime : analyzedtimes) {
 			allprocstimes += analyzedtime.second;
@@ -175,13 +186,12 @@ public:
 					buffer += '\t';
 				//get system time for define cpu usage
 				auto analyzedtimesfound = analyzedtimes.find(GetProcessId(process));
-				double calculatedpubliccputimes = (((double)allprocstimes + cpuanalyzer.GetIdle()) * ((double)allprocstimes / (double)cpuusagetimes));
+				unsigned long long calculatedpubliccputimes = allprocstimes + cpuanalyzer.GetIdle() * 100;
 				if (analyzedtimesfound != analyzedtimes.end() && calculatedpubliccputimes != 0)
 					buffer += std::to_string(((double)analyzedtimesfound->second / calculatedpubliccputimes)
 						 * 100) + "%\n";
 				else buffer += "0%\n";
-				allcpu += (analyzedtimesfound->second / (((double)allprocstimes + cpuanalyzer.GetIdle()) * ((double)allprocstimes / (double)cpuusagetimes)))
-					* 100;
+				allcpu += ((double)analyzedtimesfound->second / calculatedpubliccputimes) * 100;
 			}
 		}
 		//std::cout << allcpu << '%' << std::endl;
@@ -195,12 +205,72 @@ private:
 	static const unsigned short filenamelength = 1024;
 	unsigned short indents = 1;
 };
-
+class ConsoleUI {
+public:
+	ConsoleUI(){
+		thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	}
+	void SetOutputPrinter(const ProcessPrinter &printer) {
+		this->printer = printer;
+	}
+	void SetVisioner(ProcessVisioner &visioner) {
+		this->visioner = &visioner;
+	}
+	void MakeCursorThread() {
+		std::thread cursorthread(&CursorScrolling, &printercursor);
+		cursorthread.detach();
+	}
+	void DrawUI() {
+		COORD cursorpos = { 0, 0 };
+		size_t nextlineaddress = 0;
+		int printerlimit = 1000;
+		SetConsoleCursorPosition(thisconsole, cursorpos);
+		std::string printedinfo = printer.printProcess(*visioner);
+		int scrolledpath = 0;
+		for (size_t i = 0; i < printedinfo.length(); i++) {
+			if (printedinfo[i] == '\n') {
+				nextlineaddress = i;
+				scrolledpath++;
+			}
+			if (scrolledpath == printercursor) break;
+		}
+		WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress, (printercursor + printerlimit) * sizeof(char), NULL, NULL);
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		system("cls");
+	}
+private:
+	static void CursorScrolling(int *printercursor) {
+		std::mutex m;
+		while (true) {
+			char sym = _getch();
+			switch (sym) {
+			case 's':
+				m.lock();
+				(*printercursor)++;
+				m.unlock();
+				continue;
+			case 'w':
+				m.lock();
+				(*printercursor)--;
+				m.unlock();
+				continue;
+			}
+		}
+	}
+	ProcessPrinter printer;
+	ProcessVisioner *visioner;
+	HANDLE thisconsole;
+	int printercursor = 0;
+};
 int main() {
 	setlocale(LC_ALL, "ru");
 	ProcessVisioner visioner;
 	ProcessPrinter printer;
-	HANDLE thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	ConsoleUI ui;
+	//HANDLE thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	ui.SetOutputPrinter(printer);
+	ui.SetVisioner(visioner);
+	ui.MakeCursorThread();
 	while (true) {
 		try {
 			visioner.makeSnapshot();
@@ -209,14 +279,8 @@ int main() {
 			std::cout << error.what() << std::endl;
 			return -1;
 		}
-		//std::cout << printer.printProcess(visioner) << std::endl;
-		COORD cursorpos = { 0, 0 };
-		SetConsoleCursorPosition(thisconsole, cursorpos);
-		std::string printedinfo = printer.printProcess(visioner);
-		WriteConsoleA(thisconsole, printedinfo.c_str(), printedinfo.length() * sizeof(char), NULL, NULL);
+		ui.DrawUI();
 		visioner.closeProcs();
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		system("cls");
 		//clear buffer
 		//size_t printedinfosize = printedinfo.length();
 		//for (size_t i = 0; i < printedinfosize; i++) {

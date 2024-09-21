@@ -1,4 +1,10 @@
 ﻿  main.cpp
-C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(115,20): warning C4018: <: несоответствие типов со знаком и без знака
-C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(209,98): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(74,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(75,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(76,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(80,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(81,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(82,1): warning C4293: <<: отрицательное или слишком большое смещение; поведение не определено
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(116,20): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\Домашний\Desktop\TotalVision\TotalVision\main.cpp(216,98): warning C4267: аргумент: преобразование из "size_t" в "DWORD"; возможна потеря данных
   TotalVision.vcxproj -> C:\Users\Домашний\Desktop\TotalVision\x64\Debug\TotalVision.exe
