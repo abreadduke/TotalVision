@@ -144,7 +144,7 @@ public:
 		}
 		return buffer;
 	}
-	std::string printProcess(ProcessVisioner &visioner) {
+	std::string printProcess(ProcessVisioner &visioner, std::string *staticinfo = nullptr) {
 		ProcessAnalyzer analyzer(visioner);
 		CpuAnalyzer cpuanalyzer;
 		cpuanalyzer.MakeStatementSnapshot();
@@ -195,7 +195,10 @@ public:
 			}
 		}
 		//std::cout << allcpu << '%' << std::endl;
-		buffer += std::to_string(allcpu) + "%\n";
+		if (staticinfo != nullptr)
+			for (int i = 0; i < maxfilename; i++)
+				*staticinfo += '=';
+			*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu) + "%\n";
 		return buffer;
 	}
 	void setIndents(int indents){
@@ -217,46 +220,67 @@ public:
 		this->visioner = &visioner;
 	}
 	void MakeCursorThread() {
-		std::thread cursorthread(&CursorScrolling, &printercursor);
+		std::thread cursorthread(&CursorScrolling, &cursormutex, &printercursor);
 		cursorthread.detach();
 	}
 	void DrawUI() {
 		COORD cursorpos = { 0, 0 };
 		size_t nextlineaddress = 0;
-		int printerlimit = 1000;
+		int printerlimit = 30;
 		SetConsoleCursorPosition(thisconsole, cursorpos);
-		std::string printedinfo = printer.printProcess(*visioner);
+		std::string staticinfo;
+		std::string printedinfo = printer.printProcess(*visioner, &staticinfo);
 		int scrolledpath = 0;
-		for (size_t i = 0; i < printedinfo.length(); i++) {
-			if (printedinfo[i] == '\n') {
-				nextlineaddress = i;
-				scrolledpath++;
+		int printedlimitcounter = 0;
+		size_t eofdynamicpinfo = 0;
+		//handle information
+		cursormutex.lock();
+		do {
+			for (size_t i = 0; i < printedinfo.length(); i++) {
+				if (printedinfo[i] == '\n')
+					scrolledpath++;
+				if (scrolledpath == printercursor) { nextlineaddress = i; break; }
 			}
-			if (scrolledpath == printercursor) break;
-		}
-		WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress, (printercursor + printerlimit) * sizeof(char), NULL, NULL);
+			for (size_t i = nextlineaddress; i < printedinfo.length(); i++) {
+				if (printedinfo[i] == '\n')
+					printedlimitcounter++;
+				if (printedlimitcounter == printerlimit ) { eofdynamicpinfo = i - nextlineaddress + 1; break; }
+			}
+			if (printedlimitcounter != printerlimit) {
+				printercursor--;
+				int scrolledpath = 0;
+				int printedlimitcounter = 0;
+				size_t nextlineaddress = 0;
+				size_t eofdynamicpinfo = 0;
+			}
+		} while (nextlineaddress == printedinfo.length() - 1);
+		cursormutex.unlock();
+		nextlineaddress = nextlineaddress > 0 ? nextlineaddress : 0;
+		//write out to the console buffer
+		WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress, eofdynamicpinfo * sizeof(char), NULL, NULL);
+		WriteConsoleA(thisconsole, staticinfo.c_str(), staticinfo.length() * sizeof(char), NULL, NULL);
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		system("cls");
 	}
 private:
-	static void CursorScrolling(int *printercursor) {
-		std::mutex m;
+	static void CursorScrolling(std::mutex *m, int *printercursor) {
 		while (true) {
 			char sym = _getch();
 			switch (sym) {
 			case 's':
-				m.lock();
+				m->lock();
 				(*printercursor)++;
-				m.unlock();
+				m->unlock();
 				continue;
 			case 'w':
-				m.lock();
+				m->lock();
 				(*printercursor)--;
-				m.unlock();
+				m->unlock();
 				continue;
 			}
 		}
 	}
+	std::mutex cursormutex;
 	ProcessPrinter printer;
 	ProcessVisioner *visioner;
 	HANDLE thisconsole;
