@@ -127,7 +127,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="analyzer.cpp" />
+    <ClCompile Include="consoleinterface.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="visioner.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="analyzer.h" />
+    <ClInclude Include="consoleinterface.h" />
+    <ClInclude Include="visioner.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
