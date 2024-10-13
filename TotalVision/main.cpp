@@ -1,8 +1,8 @@
 #include <windows.h>
 #include <iostream>
-#include "visioner.h"
-#include "analyzer.h"
-#include "consoleinterface.h"
+#include "visioner.hpp"
+#include "analyzer.hpp"
+#include "consoleinterface.hpp"
 
 int main() {
 	setlocale(LC_ALL, "ru");

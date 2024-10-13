@@ -1,0 +1,56 @@
+#include "datastorage.hpp"
+
+using namespace Aspose::Cells;
+
+DataStorage::DataStorage() {}
+TextStorage::TextStorage() : DataStorage::DataStorage() {};
+void TextStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) {
+	auto analyzedprocesses = timeanalyzer.GetAnalyzed();
+	std::ofstream filestream(filepath);
+	if (filestream.is_open()) {
+		std::string data;
+		for (auto analyzedprocess : analyzedprocesses) {
+			data += str(analyzedprocess.processId) + '\t' + analyzedprocess.processName +
+				'\t' + str(analyzedprocess.processMemoryUsage) + '\t' + str(analyzedprocess.processCPUPersents) + '\n';
+		}
+		filestream.write(data.c_str(), data.length());
+		filestream.close();
+	}
+}
+XLSStorage::XLSStorage() {}
+void XLSStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) {
+	auto analyzedprocesses = timeanalyzer.GetAnalyzed();
+	Aspose::Cells::Startup();
+
+	Workbook workbook(FileFormatType::Xlsx);
+	Worksheet sheet = workbook.GetWorksheets().Get(0);
+	Cells cells = sheet.GetCells();
+	cells.Get(0, 0).PutValue(u"ID");
+	cells.Get(0, 1).PutValue(u"Процесс");
+	cells.Get(0, 2).PutValue(u"Использование памяти");
+	cells.Get(0, 3).PutValue(u"Использование процессора");
+	cells.SetColumnWidth(1, 150);
+	cells.SetColumnWidth(2, 30);
+	cells.SetColumnWidth(3, 30);
+	int cellid = 1;
+	for (auto analyzedprocess : analyzedprocesses) {
+		//LPSTR wProcessName = NULL;
+		//CharToOemA(analyzedprocess.processName.c_str(), wProcessName);
+		cells.Get(cellid, 0).PutValue((int32_t)analyzedprocess.processId);
+		cells.Get(cellid, 1).PutValue(Aspose::Cells::U16String(analyzedprocess.processName.c_str()));
+		cells.Get(cellid, 2).PutValue((int32_t)analyzedprocess.processMemoryUsage);
+		cells.Get(cellid++, 3).PutValue((double)analyzedprocess.processCPUPersents);
+	}
+
+	int chartIndex = sheet.GetCharts().Add(ChartType::Column, 9, 9, 50, 60);
+	Chart chart = sheet.GetCharts().Get(chartIndex);
+	int processesLength = analyzedprocesses.size();
+	chart.GetNSeries().Add(Aspose::Cells::U16String((std::string("D2:D") + std::to_string(processesLength)).c_str()), true);
+	chart.GetNSeries().SetCategoryData(Aspose::Cells::U16String((std::string("A2:A") + std::to_string(processesLength)).c_str()));
+	//Series aSeries = chart.GetNSeries().Get(0);
+	//aSeries.SetName(u"=B1");
+	chart.SetShowLegend(true);
+	chart.GetTitle().SetText(u"Использование cpu");
+	workbook.Save(u"output.xlsx");
+	Aspose::Cells::Cleanup();
+}

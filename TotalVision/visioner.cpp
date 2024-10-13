@@ -1,4 +1,4 @@
-#include "visioner.h"
+#include "visioner.hpp"
 
 std::vector<HANDLE> getAllProcs() {
 	std::vector<HANDLE> procs;
@@ -8,7 +8,6 @@ std::vector<HANDLE> getAllProcs() {
 	if (INVALID_HANDLE_VALUE == hSnapshot) {
 		throw std::runtime_error("Невозможно сделать снапшот процессов");
 	}
-	
 	peProcessEntry.dwSize = sizeof(PROCESSENTRY32);
 	Process32First(hSnapshot, &peProcessEntry);
 	do {
