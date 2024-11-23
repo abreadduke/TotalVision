@@ -112,6 +112,8 @@ void ProcessPrinter::setIndents(int indents) {
 }
 ConsoleUI::ConsoleUI() {
 	thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	timeAnalyzer.SetBufferSize(50);
+	timeAnalyzer.SetSnapshotsCount(15);
 }
 void ConsoleUI::SetOutputPrinter(const ProcessPrinter& printer) {
 	this->printer = printer;
@@ -125,8 +127,9 @@ void ConsoleUI::MakeCursorThread() {
 }
 void ConsoleUI::DrawUI() {
 	timeAnalyzerMutex.lock();
-	timeAnalyzer.ClearResults();
+	//timeAnalyzer.ClearResults();
 	timeAnalyzer.Analyze(*visioner);
+	//timeAnalyzer.AnalyzeMidValues(*visioner, 10, 5);
 	timeAnalyzerMutex.unlock();
 	COORD cursorpos = { 0, 0 };
 	size_t nextlineaddress = 0;

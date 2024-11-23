@@ -44,6 +44,7 @@ private:
 	ProcessPrinter printer;
 	ProcessVisioner* visioner;
 	HANDLE thisconsole;
-	TimeAnalyzer timeAnalyzer;
+	//TimeAnalyzer timeAnalyzer;
+	MidTimeAnalyzer timeAnalyzer;
 	int printercursor = 0;
 };

@@ -7,7 +7,11 @@
 #include <tlhelp32.h>
 #include <psapi.h>
 #include <thread>
+#include <algorithm>
+#include <queue>
+#include <map>
 #include "visioner.hpp"
+
 class ProcessAnalyzer {
 public:
 	ProcessAnalyzer(ProcessVisioner& visioner);
@@ -41,10 +45,28 @@ public:
 		double processCPUPersents;
 	};
 	TimeAnalyzer();
-	void Analyze(ProcessVisioner& visioner);
+	virtual void Analyze(ProcessVisioner& visioner);
 	void ClearResults();
 	const std::vector<AnalyzedProcess> GetAnalyzed();
 private:
-	std::vector<AnalyzedProcess> analyzedProcs;
 	CpuAnalyzer cpuanalyzer;
+protected:
+	std::vector<AnalyzedProcess> analyzedProcs;
+};
+class MidTimeAnalyzer : public TimeAnalyzer {
+public:
+	MidTimeAnalyzer();
+	virtual void Analyze(ProcessVisioner& visioner) override;
+	void SetBufferSize(unsigned short bufferSize);
+	unsigned short GetBufferSize();
+	void SetAnalyzerOffset(size_t analyzerOffset);
+	size_t GetAnalyzerOffset();
+	void SetSnapshotsCount(unsigned short snapshotsCount);
+	unsigned short GetSnapshotsCount();
+private:
+	size_t analyzerOffset = 10;
+	unsigned short bufferSize = 10;
+	//must be more than 1
+	unsigned short snapshotsCount = 3;
+	std::queue<std::map<DWORD, TimeAnalyzer::AnalyzedProcess>> analyzedProcessesBuffer;
 };
