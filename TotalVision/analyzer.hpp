@@ -39,7 +39,7 @@ private:
 class TimeAnalyzer {
 public:
 	struct AnalyzedProcess {
-		DWORD processId;
+		//DWORD processId;
 		std::string processName;
 		size_t processMemoryUsage;
 		double processCPUPersents;
@@ -47,11 +47,11 @@ public:
 	TimeAnalyzer();
 	virtual void Analyze(ProcessVisioner& visioner);
 	void ClearResults();
-	const std::vector<AnalyzedProcess> GetAnalyzed();
+	const std::map<DWORD, TimeAnalyzer::AnalyzedProcess> GetAnalyzed();
 private:
 	CpuAnalyzer cpuanalyzer;
 protected:
-	std::vector<AnalyzedProcess> analyzedProcs;
+	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedProcs;
 };
 class MidTimeAnalyzer : public TimeAnalyzer {
 public:

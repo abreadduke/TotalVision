@@ -101,17 +101,18 @@ void TimeAnalyzer::Analyze(ProcessVisioner &visioner){
 				if (rfilename != "") break;
 			}
 			TimeAnalyzer::AnalyzedProcess analyzedprocess = {
-				processid, rfilename, processmemory, parcedtimes
+				rfilename, processmemory, parcedtimes
 			};
-			this->analyzedProcs.push_back(analyzedprocess);
+			//this->analyzedProcs.push_back(analyzedprocess);
+			this->analyzedProcs[processid] = analyzedprocess;
 		}
 	}
 }
 void TimeAnalyzer::ClearResults() {
 	analyzedProcs.clear();
 }
-const std::vector<TimeAnalyzer::AnalyzedProcess> TimeAnalyzer::GetAnalyzed() {
-	return (const std::vector<TimeAnalyzer::AnalyzedProcess>)(this->analyzedProcs);
+const std::map<DWORD, TimeAnalyzer::AnalyzedProcess> TimeAnalyzer::GetAnalyzed() {
+	return (const std::map<DWORD, TimeAnalyzer::AnalyzedProcess>)(this->analyzedProcs);
 }
 MidTimeAnalyzer::MidTimeAnalyzer() : TimeAnalyzer::TimeAnalyzer(){}
 void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
@@ -122,7 +123,7 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
 	TimeAnalyzer hiddenAnalyzer;
 	//hiddenAnalyzer.Analyze(visioner);
 	//std::vector<TimeAnalyzer::AnalyzedProcess> newAnalyzed = hiddenAnalyzer.GetAnalyzed();
-	std::vector<TimeAnalyzer::AnalyzedProcess> recombinatedAnalyzedProcs;
+	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> recombinatedAnalyzedProcs;
 	//for (auto newAp : newAnalyzed) {
 	//	bool hasNotNewAp = true;
 	//	for (auto oldAp : analyzedProcs) {
@@ -144,11 +145,7 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
 		while (analyzedProcessesBuffer.size() >= bufferSize) {
 			analyzedProcessesBuffer.pop();
 		}
-		std::map<DWORD, TimeAnalyzer::AnalyzedProcess> mappedAnalyzedProcs;
-		for (auto ap : hiddenAnalyzer.GetAnalyzed()) {
-			mappedAnalyzedProcs.insert(std::make_pair(ap.processId, ap));
-		}
-		analyzedProcessesBuffer.push(mappedAnalyzedProcs);
+		analyzedProcessesBuffer.push(hiddenAnalyzer.GetAnalyzed());
 	}
 	hiddenAnalyzer.ClearResults();
 	std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
@@ -161,7 +158,7 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
 			std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedSnapshot = analyzedProcessesBuffer.front();
 			analyzedProcessesBuffer.pop();
 			bufferBackup.push(analyzedSnapshot);
-			auto processInfoIterator = analyzedSnapshot.find(ap.processId);
+			auto processInfoIterator = analyzedSnapshot.find(ap.first);
 			if (processInfoIterator != analyzedSnapshot.end()) {
 				procs.push_back(processInfoIterator->second);
 			}
@@ -173,9 +170,11 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
 			processCPUPersents += apFromProcs.processCPUPersents;
 		}
 		size_t procsLength = procs.size();
-		recombinatedAnalyzedProcs.push_back({ap.processId, ap.processName,
-											processMemoryUsage / procsLength,
-											processCPUPersents / procsLength});
+		if (procsLength != 0) {
+			recombinatedAnalyzedProcs[ap.first] = { ap.second.processName,
+												processMemoryUsage / procsLength,
+												processCPUPersents / procsLength };
+		}
 		analyzedProcessesBuffer = bufferBackup;
 	}
 	analyzedProcs = recombinatedAnalyzedProcs;

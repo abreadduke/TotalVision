@@ -23,7 +23,7 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 	}
 	*/
 	for (auto pinfo : timeanalyzer.GetAnalyzed()) {
-		maxfilename = (unsigned short)std::fmaxf(pinfo.processName.length(), maxfilename);
+		maxfilename = (unsigned short)std::fmaxf(pinfo.second.processName.length(), maxfilename);
 	}
 	/*
 	unsigned long long allprocstimes = 0;
@@ -60,7 +60,7 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 	}
 	*/
 	for (auto pinfo : timeanalyzer.GetAnalyzed()) {
-		std::string rfilename = pinfo.processName;
+		std::string rfilename = pinfo.second.processName;
 		buffer += rfilename;
 		for (int i = 0; i < maxfilename - rfilename.size(); i++)
 			buffer += ' ';
@@ -70,7 +70,7 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 			#else
 			buffer += TAB;
 			#endif
-		buffer += std::to_string(pinfo.processMemoryUsage) + "MB";
+		buffer += std::to_string(pinfo.second.processMemoryUsage) + "MB";
 		for (int i = 0; i < this->indents; i++)
 			#ifdef TABENABLE
 			buffer += '\t';
@@ -78,8 +78,8 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 			buffer += TAB;
 			#endif
 		//get system time for define cpu usage
-		buffer += std::to_string(pinfo.processCPUPersents) + "%\n";
-		allcpu += pinfo.processCPUPersents;
+		buffer += std::to_string(pinfo.second.processCPUPersents) + "%\n";
+		allcpu += pinfo.second.processCPUPersents;
 	}
 	if (staticinfo != nullptr)
 		for (int i = 0; i < maxfilename; i++)

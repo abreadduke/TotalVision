@@ -10,8 +10,8 @@ void TextStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& file
 	if (filestream.is_open()) {
 		std::string data;
 		for (auto analyzedprocess : analyzedprocesses) {
-			data += str(analyzedprocess.processId) + '\t' + analyzedprocess.processName +
-				'\t' + str(analyzedprocess.processMemoryUsage) + '\t' + str(analyzedprocess.processCPUPersents) + '\n';
+			data += str(analyzedprocess.first) + '\t' + analyzedprocess.second.processName +
+				'\t' + str(analyzedprocess.second.processMemoryUsage) + '\t' + str(analyzedprocess.second.processCPUPersents) + '\n';
 		}
 		filestream.write(data.c_str(), data.length());
 		filestream.close();
@@ -36,10 +36,10 @@ void XLSStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filep
 	for (auto analyzedprocess : analyzedprocesses) {
 		//LPSTR wProcessName = NULL;
 		//CharToOemA(analyzedprocess.processName.c_str(), wProcessName);
-		cells.Get(cellid, 0).PutValue((int32_t)analyzedprocess.processId);
-		cells.Get(cellid, 1).PutValue(Aspose::Cells::U16String(analyzedprocess.processName.c_str()));
-		cells.Get(cellid, 2).PutValue((int32_t)analyzedprocess.processMemoryUsage);
-		cells.Get(cellid++, 3).PutValue((double)analyzedprocess.processCPUPersents);
+		cells.Get(cellid, 0).PutValue((int32_t)analyzedprocess.first);
+		cells.Get(cellid, 1).PutValue(Aspose::Cells::U16String(analyzedprocess.second.processName.c_str()));
+		cells.Get(cellid, 2).PutValue((int32_t)analyzedprocess.second.processMemoryUsage);
+		cells.Get(cellid++, 3).PutValue((double)analyzedprocess.second.processCPUPersents);
 	}
 
 	int chartIndex = sheet.GetCharts().Add(ChartType::Column, 9, 9, 50, 60);
