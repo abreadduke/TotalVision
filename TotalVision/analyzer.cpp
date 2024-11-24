@@ -116,28 +116,6 @@ const std::map<DWORD, TimeAnalyzer::AnalyzedProcess> TimeAnalyzer::GetAnalyzed()
 }
 MidTimeAnalyzer::MidTimeAnalyzer() : TimeAnalyzer::TimeAnalyzer(){}
 void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
-	//ClearResults();
-	//if (analyzedProcs.size() == 0) {
-	//	TimeAnalyzer::Analyze(visioner);
-	//}
-	TimeAnalyzer hiddenAnalyzer;
-	//hiddenAnalyzer.Analyze(visioner);
-	//std::vector<TimeAnalyzer::AnalyzedProcess> newAnalyzed = hiddenAnalyzer.GetAnalyzed();
-	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> recombinatedAnalyzedProcs;
-	//for (auto newAp : newAnalyzed) {
-	//	bool hasNotNewAp = true;
-	//	for (auto oldAp : analyzedProcs) {
-	//		if (newAp.processId == oldAp.processId) {
-	//			recombinatedAnalyzedProcs.push_back({newAp.processId, newAp.processName, 
-	//				(newAp.processMemoryUsage + oldAp.processMemoryUsage) / 2,
-	//				(newAp.processCPUPersents + oldAp.processCPUPersents) / 2});
-	//			hasNotNewAp = false;
-	//			break;
-	//		}
-	//	}
-	//	if(hasNotNewAp)
-	//		recombinatedAnalyzedProcs.push_back(newAp);
-	//}
 	for (unsigned short b = 0; b < snapshotsCount; b++) {
 		hiddenAnalyzer.ClearResults();
 		std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
@@ -147,37 +125,7 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner){
 		}
 		analyzedProcessesBuffer.push(hiddenAnalyzer.GetAnalyzed());
 	}
-	hiddenAnalyzer.ClearResults();
-	std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
-	hiddenAnalyzer.Analyze(visioner);
-	for (auto ap : hiddenAnalyzer.GetAnalyzed()) {
-		bool hasNotNewAp = false;
-		std::vector<TimeAnalyzer::AnalyzedProcess> procs;
-		std::queue<std::map<DWORD, TimeAnalyzer::AnalyzedProcess>> bufferBackup;
-		while (!analyzedProcessesBuffer.empty()) {
-			std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedSnapshot = analyzedProcessesBuffer.front();
-			analyzedProcessesBuffer.pop();
-			bufferBackup.push(analyzedSnapshot);
-			auto processInfoIterator = analyzedSnapshot.find(ap.first);
-			if (processInfoIterator != analyzedSnapshot.end()) {
-				procs.push_back(processInfoIterator->second);
-			}
-		}
-		size_t processMemoryUsage = 0;
-		double processCPUPersents = 0;
-		for (auto apFromProcs : procs) {
-			processMemoryUsage += apFromProcs.processMemoryUsage;
-			processCPUPersents += apFromProcs.processCPUPersents;
-		}
-		size_t procsLength = procs.size();
-		if (procsLength != 0) {
-			recombinatedAnalyzedProcs[ap.first] = { ap.second.processName,
-												processMemoryUsage / procsLength,
-												processCPUPersents / procsLength };
-		}
-		analyzedProcessesBuffer = bufferBackup;
-	}
-	analyzedProcs = recombinatedAnalyzedProcs;
+	AnalyzeWithGivenBuffer(visioner, analyzedProcessesBuffer);
 }
 void MidTimeAnalyzer::SetBufferSize(unsigned short bufferSize) {
 	this->bufferSize = bufferSize;
@@ -196,4 +144,65 @@ void MidTimeAnalyzer::SetSnapshotsCount(unsigned short snapshotsCount) {
 }
 unsigned short MidTimeAnalyzer::GetSnapshotsCount() {
 	return this->snapshotsCount;
+}
+void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner, std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>>& buffer) {
+	AnalyzeWithGivenBuffer(visioner, buffer);
+}
+void MidTimeAnalyzer::AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::queue<std::map<DWORD, AnalyzedProcess>>& buffer) {
+	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> recombinatedAnalyzedProcs;
+	hiddenAnalyzer.ClearResults();
+	std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
+	hiddenAnalyzer.Analyze(visioner);
+	for (auto ap : hiddenAnalyzer.GetAnalyzed()) {
+		bool hasNotNewAp = false;
+		std::vector<TimeAnalyzer::AnalyzedProcess> procs;
+		std::queue<std::map<DWORD, TimeAnalyzer::AnalyzedProcess>> bufferBackup;
+		while (!buffer.empty()) {
+			std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedSnapshot = buffer.front();
+			buffer.pop();
+			bufferBackup.push(analyzedSnapshot);
+			auto processInfoIterator = analyzedSnapshot.find(ap.first);
+			if (processInfoIterator != analyzedSnapshot.end()) {
+				procs.push_back(processInfoIterator->second);
+			}
+		}
+		size_t processMemoryUsage = 0;
+		double processCPUPersents = 0;
+		for (auto apFromProcs : procs) {
+			processMemoryUsage += apFromProcs.processMemoryUsage;
+			processCPUPersents += apFromProcs.processCPUPersents;
+		}
+		size_t procsLength = procs.size();
+		if (procsLength != 0) {
+			recombinatedAnalyzedProcs[ap.first] = { ap.second.processName,
+												processMemoryUsage / procsLength,
+												processCPUPersents / procsLength };
+		}
+		buffer = bufferBackup;
+	}
+	analyzedProcs = recombinatedAnalyzedProcs;
+}
+void MidTimeAnalyzer::AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>>& buffer) {
+	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> combinedProcs;
+	std::map<DWORD, int> countProcessesInBuffer;
+	std::hash<std::string> stringHash;
+	for (int snapshotIndex = 0; snapshotIndex < buffer.size(); snapshotIndex++) {
+		for (auto process : buffer[snapshotIndex]) {
+			DWORD hashcode = stringHash(process.processName);
+			if (combinedProcs.find(hashcode) == combinedProcs.end()) {
+				combinedProcs[hashcode] = process;
+				countProcessesInBuffer[hashcode] = 0;
+			}
+			else {
+				combinedProcs[hashcode].processMemoryUsage += process.processMemoryUsage;
+				combinedProcs[hashcode].processCPUPersents += process.processCPUPersents;
+			}
+			countProcessesInBuffer[hashcode]++;
+		}
+	}
+	for (auto processInfoForMidiation : combinedProcs) {
+		combinedProcs[processInfoForMidiation.first].processMemoryUsage /= countProcessesInBuffer[processInfoForMidiation.first];
+		combinedProcs[processInfoForMidiation.first].processCPUPersents /= countProcessesInBuffer[processInfoForMidiation.first];
+	}
+	analyzedProcs = combinedProcs;
 }

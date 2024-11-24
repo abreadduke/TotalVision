@@ -1,4 +1,6 @@
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <cmath>
 #include <regex>
 #include <string>
@@ -16,8 +18,11 @@
 #include "visioner.hpp"
 #include "analyzer.hpp"
 #include "datastorage.hpp"
+#include <filesystem>
+#include <ctime>
 #define BYTENEXTDIS 1024
 #define TAB "    "
+
 //#define TABENABLE
 
 class ProcessPrinter {

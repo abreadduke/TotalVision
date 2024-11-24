@@ -1,6 +1,7 @@
 #include "analyzer.hpp"
 #include <fstream>
 #include <Aspose.Cells.h>
+#include <set>
 
 #define str(fig) std::to_string(fig)
 
@@ -19,4 +20,19 @@ class XLSStorage : public DataStorage {
 public:
 	XLSStorage();
 	virtual void SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) override;
+};
+class BinaryStorage : public DataStorage {
+public:
+	BinaryStorage();
+	virtual void SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) override;
+};
+class StorageReader {
+public:
+	StorageReader();
+	virtual std::vector<TimeAnalyzer::AnalyzedProcess> ReadStorage(const std::string& filepath) = 0;
+};
+class BinaryReader : public StorageReader {
+public:
+	BinaryReader();
+	virtual std::vector<TimeAnalyzer::AnalyzedProcess> ReadStorage(const std::string& filepath) override;
 };

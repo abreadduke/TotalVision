@@ -187,12 +187,36 @@ void ConsoleUI::CursorScrolling() {
 			printercursor--;
 			cursormutex.unlock();
 			continue;
+		case 'q': {
+			StorageReader* reader = new BinaryReader();
+			std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
+			for (auto filepath : std::filesystem::directory_iterator(".")) {
+				std::string filename = filepath.path().string();
+				if (std::regex_match(filename, std::regex("\\.\\\\parsed_snapshot-.+"))) {
+					auto parsedSnapshot = reader->ReadStorage(filename);
+					parsedSnapshots.push_back(parsedSnapshot);
+				}
+			}
+			delete reader;
+			MidTimeAnalyzer midAnalyzer;
+			DataStorage* ds = new XLSStorage();
+			std::string filepath = "analitics.xlsx";
+			midAnalyzer.Analyze(*visioner, parsedSnapshots);
+			ds->SaveToFile(midAnalyzer, filepath);
+			delete ds;
+			continue;
+		}
 		case 'e':
-			XLSStorage ds;
-			const std::string filepath("file.txt");
+			//XLSStorage ds;
+			DataStorage* ds = new BinaryStorage();
+			std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+			std::tm* nowDate = std::localtime(&time);
+			//
+			std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
 			timeAnalyzerMutex.lock();
-			ds.SaveToFile(timeAnalyzer, filepath);
+			ds->SaveToFile(timeAnalyzer, filepath);
 			timeAnalyzerMutex.unlock();
+			delete ds;
 			continue;
 		}
 	}

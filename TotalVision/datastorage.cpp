@@ -51,6 +51,57 @@ void XLSStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filep
 	//aSeries.SetName(u"=B1");
 	chart.SetShowLegend(true);
 	chart.GetTitle().SetText(u"Использование cpu");
-	workbook.Save(u"output.xlsx");
+	workbook.Save(Aspose::Cells::U16String(filepath.c_str()));
 	Aspose::Cells::Cleanup();
+}
+StorageReader::StorageReader() {}
+BinaryStorage::BinaryStorage() : DataStorage::DataStorage() {}
+void BinaryStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) {
+	auto rawAnalyzedprocesses = timeanalyzer.GetAnalyzed();
+	std::ofstream writeStream(filepath, std::ios::binary);
+	if (writeStream.is_open()) {
+		std::map<std::string, TimeAnalyzer::AnalyzedProcess> combinedProcs;
+		for (auto process : rawAnalyzedprocesses) {
+			if (combinedProcs.find(process.second.processName) == combinedProcs.end()) {
+				combinedProcs[process.second.processName] = process.second;
+			}
+			else {
+				combinedProcs[process.second.processName].processMemoryUsage += process.second.processMemoryUsage;
+				combinedProcs[process.second.processName].processCPUPersents += process.second.processCPUPersents;
+			}
+		}
+		for (auto process : combinedProcs) {
+			size_t processNameLength = process.second.processName.length();
+			char* pProcessName = (char*)process.first.c_str();
+			writeStream.write((const char*)&processNameLength, sizeof(size_t));
+			writeStream.write(pProcessName, processNameLength * sizeof(char));
+			writeStream.write((const char *)&process.second.processMemoryUsage, sizeof(size_t));
+			writeStream.write((const char *)&process.second.processCPUPersents, sizeof(double));
+		}
+		writeStream.close();
+	}
+}
+BinaryReader::BinaryReader() : StorageReader::StorageReader() {}
+
+std::vector<TimeAnalyzer::AnalyzedProcess> BinaryReader::ReadStorage(const std::string& filepath) {
+	std::ifstream readStream(filepath);
+	std::vector<TimeAnalyzer::AnalyzedProcess> redProcs;
+	if (readStream.is_open()) {
+		while (!readStream.eof())
+		{
+			size_t processNameLength = 0;
+			size_t processMemoryUsage = 0;
+			double processCPUPersents = 0;
+			readStream.read((char*)&processNameLength, sizeof(size_t));
+			char* pProcessName = new char[processNameLength+1];
+			readStream.read(pProcessName, sizeof(char) * processNameLength);
+			pProcessName[processNameLength] = '\0';
+			readStream.read((char*)&processMemoryUsage, sizeof(size_t));
+			readStream.read((char*)&processCPUPersents, sizeof(double));
+			redProcs.push_back({std::string(pProcessName), processMemoryUsage, processCPUPersents});
+			delete pProcessName;
+		}
+		readStream.close();
+		return redProcs;
+	}
 }

@@ -57,13 +57,18 @@ class MidTimeAnalyzer : public TimeAnalyzer {
 public:
 	MidTimeAnalyzer();
 	virtual void Analyze(ProcessVisioner& visioner) override;
+	virtual void Analyze(ProcessVisioner& visioner, std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>>& buffer);
 	void SetBufferSize(unsigned short bufferSize);
 	unsigned short GetBufferSize();
 	void SetAnalyzerOffset(size_t analyzerOffset);
 	size_t GetAnalyzerOffset();
 	void SetSnapshotsCount(unsigned short snapshotsCount);
 	unsigned short GetSnapshotsCount();
+protected:
+	virtual void AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::queue<std::map<DWORD, TimeAnalyzer::AnalyzedProcess>>& buffer);
+	virtual void AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>>& buffer);
 private:
+	TimeAnalyzer hiddenAnalyzer;
 	size_t analyzerOffset = 10;
 	unsigned short bufferSize = 10;
 	//must be more than 1
