@@ -57,6 +57,7 @@ void XLSStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filep
 StorageReader::StorageReader() {}
 BinaryStorage::BinaryStorage() : DataStorage::DataStorage() {}
 void BinaryStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) {
+	if (&timeanalyzer == nullptr) throw std::exception("Attempt to give null analyzer");
 	auto rawAnalyzedprocesses = timeanalyzer.GetAnalyzed();
 	std::ofstream writeStream(filepath, std::ios::binary);
 	if (writeStream.is_open()) {

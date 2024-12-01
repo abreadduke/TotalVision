@@ -1,3 +1,6 @@
+#define TEST
+
+#ifndef TEST
 #include <windows.h>
 #include <iostream>
 #include "visioner.hpp"
@@ -25,3 +28,10 @@ int main() {
 	}
 	return 0;
 }
+#else
+#include "tests/timings_test.hpp"
+int main() {
+	TestTimings();
+	return 0;
+}
+#endif
