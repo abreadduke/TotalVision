@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="analyzer.cpp" />
+    <ClCompile Include="commandhandler.cpp" />
     <ClCompile Include="consoleinterface.cpp" />
     <ClCompile Include="datastorage.cpp" />
     <ClCompile Include="main.cpp" />
@@ -153,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="analyzer.hpp" />
+    <ClInclude Include="commandhandler.hpp" />
     <ClInclude Include="consoleinterface.hpp" />
     <ClInclude Include="datastorage.hpp" />
     <ClInclude Include="tests\timings_test.hpp" />

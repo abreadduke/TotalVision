@@ -42,6 +42,9 @@
     <ClCompile Include="tests\timings_test.cpp">
       <Filter>Исходные файлы\tests</Filter>
     </ClCompile>
+    <ClCompile Include="commandhandler.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="analyzer.hpp">
@@ -61,6 +64,9 @@
     </ClInclude>
     <ClInclude Include="tests\timings_test.hpp">
       <Filter>Файлы заголовков\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="commandhandler.hpp">
+      <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -192,7 +192,7 @@ void ConsoleUI::CursorScrolling() {
 			std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
 			for (auto filepath : std::filesystem::directory_iterator(".")) {
 				std::string filename = filepath.path().string();
-				if (std::regex_match(filename, std::regex("\\.\\\\parsed_snapshot-.+"))) {
+				if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
 					auto parsedSnapshot = reader->ReadStorage(filename);
 					parsedSnapshots.push_back(parsedSnapshot);
 				}

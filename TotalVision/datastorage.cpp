@@ -61,6 +61,10 @@ void BinaryStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& fi
 	auto rawAnalyzedprocesses = timeanalyzer.GetAnalyzed();
 	std::ofstream writeStream(filepath, std::ios::binary);
 	if (writeStream.is_open()) {
+		//
+		XLSStorage st;
+		st.SaveToFile(timeanalyzer, filepath+".xlsx");
+		//
 		std::map<std::string, TimeAnalyzer::AnalyzedProcess> combinedProcs;
 		for (auto process : rawAnalyzedprocesses) {
 			if (combinedProcs.find(process.second.processName) == combinedProcs.end()) {
