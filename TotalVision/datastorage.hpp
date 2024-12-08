@@ -3,7 +3,7 @@
 #include <Aspose.Cells.h>
 #include <set>
 
-#define str(fig) std::to_string(fig)
+#define _STR(fig) std::to_string(fig)
 
 #pragma once
 class DataStorage {

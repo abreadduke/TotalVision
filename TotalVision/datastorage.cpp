@@ -10,8 +10,8 @@ void TextStorage::SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& file
 	if (filestream.is_open()) {
 		std::string data;
 		for (auto analyzedprocess : analyzedprocesses) {
-			data += str(analyzedprocess.first) + '\t' + analyzedprocess.second.processName +
-				'\t' + str(analyzedprocess.second.processMemoryUsage) + '\t' + str(analyzedprocess.second.processCPUPersents) + '\n';
+			data += _STR(analyzedprocess.first) + '\t' + analyzedprocess.second.processName +
+				'\t' + _STR(analyzedprocess.second.processMemoryUsage) + '\t' + _STR(analyzedprocess.second.processCPUPersents) + '\n';
 		}
 		filestream.write(data.c_str(), data.length());
 		filestream.close();

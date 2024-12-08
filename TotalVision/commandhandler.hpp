@@ -3,19 +3,10 @@
 #include <regex>
 #include <list>
 #include <thread>
-#include "consoleinterface.hpp"
 #include "visioner.hpp"
+#include "timings.hpp"
+#include "consoleinterface.hpp"
 
-class ThreadDistributor {
-public:
-	ThreadDistributor();
-	bool GetNewThread(std::thread* &t);
-	bool ClearThread();
-	std::thread* GetThread();
-private:
-	bool isThreadExist = false;
-	std::thread* t = nullptr;
-};
 class ICommand {
 public:
 	virtual void SetCommand(std::string command) = 0;
@@ -45,4 +36,13 @@ public:
 	virtual bool SetDistributor(ThreadDistributor* distributor);
 private:
 	ThreadDistributor* distributor = nullptr;
+};
+class TimerCommand : public Command {
+public:
+	TimerCommand();
+	virtual bool ExecuteCommand() override;
+	virtual ISystemTimer* GetTimer();
+	~TimerCommand();
+private:
+	ISystemTimer* timer = nullptr;
 };

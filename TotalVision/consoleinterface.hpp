@@ -1,6 +1,5 @@
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
-
 #include <cmath>
 #include <regex>
 #include <string>
@@ -20,11 +19,13 @@
 #include "datastorage.hpp"
 #include <filesystem>
 #include <ctime>
+#include "distribute.hpp"
 #define BYTENEXTDIS 1024
 #define TAB "    "
 
 //#define TABENABLE
-
+class ConsoleUI;
+class IExecutableProcedure;
 class ProcessPrinter {
 public:
 	ProcessPrinter();
@@ -40,16 +41,53 @@ public:
 	ConsoleUI();
 	void SetOutputPrinter(const ProcessPrinter& printer);
 	void SetVisioner(ProcessVisioner& visioner);
-	void MakeCursorThread();
+	void MakeActionHandlerThread();
 	void DrawUI();
-private:
-	void CursorScrolling();
-	std::mutex cursormutex;
+	const TimeAnalyzer* GetAnalyzer();
+	const ProcessVisioner* GetVisioner();
 	std::mutex timeAnalyzerMutex;
+	void AddKeyBindAction(const char key, IExecutableProcedure* action);
+	~ConsoleUI();
+private:
+	bool running = true;
+	std::thread actionHandling;
+	std::map<const char, IExecutableProcedure*> keyBindActions;
+	void ButtonActionsHandler();
+	std::mutex cursormutex;
 	ProcessPrinter printer;
 	ProcessVisioner* visioner;
 	HANDLE thisconsole;
 	//TimeAnalyzer timeAnalyzer;
 	MidTimeAnalyzer timeAnalyzer;
 	int printercursor = 0;
+};
+class IExecutableProcedure {
+public:
+	virtual void Execute(ConsoleUI* consoleui) = 0;
+};
+class ThreadCloseProcedure : public IExecutableProcedure {
+public:
+	ThreadCloseProcedure();
+	virtual void Execute(ConsoleUI* consoleui) override;
+	virtual void SetThreadDistrubutor(ThreadDistributor* distributor);
+protected:
+	ThreadDistributor* distributor = nullptr;
+};
+class FinalAnalyzeProcedure : public IExecutableProcedure {
+public:
+	FinalAnalyzeProcedure();
+	virtual void Execute(ConsoleUI* consoleui) override;
+protected:
+	ProcessVisioner* visioner;
+};
+class MakeAnalyzedFile : public IExecutableProcedure {
+public:
+	virtual void SaveToFile(TimeAnalyzer& timeAnalyzer, DataStorage* dataStorage, std::string filename);
+protected:
+	std::string filename;
+};
+class MakeBinaryAnalyzedFile : public MakeAnalyzedFile {
+public:
+	MakeBinaryAnalyzedFile();
+	virtual void Execute(ConsoleUI* consoleui) override;
 };

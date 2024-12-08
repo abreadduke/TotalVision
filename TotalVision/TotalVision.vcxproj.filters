@@ -45,6 +45,9 @@
     <ClCompile Include="commandhandler.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="distribute.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="analyzer.hpp">
@@ -66,6 +69,9 @@
       <Filter>Файлы заголовков\tests</Filter>
     </ClInclude>
     <ClInclude Include="commandhandler.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="distribute.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,23 +1,5 @@
 #include "commandhandler.hpp"
 
-ThreadDistributor::ThreadDistributor(){}
-bool ThreadDistributor::GetNewThread(std::thread* &t) {
-	if (this->isThreadExist) return false;
-	t = new std::thread;
-	this->t = t;
-	this->isThreadExist = true;
-	return true;
-}
-bool ThreadDistributor::ClearThread() {
-	if (!this->isThreadExist) return false;
-	this->isThreadExist = false;
-	delete this->t;
-	return true;
-}
-std::thread* ThreadDistributor::GetThread() {
-	if (this->isThreadExist) return this->t;
-	return nullptr;
-}
 ConsoleReadCommand::ConsoleReadCommand() {}
 ConsoleReadCommand::ConsoleReadCommand(std::string command) {
 	SetCommand(command);
@@ -54,7 +36,14 @@ bool VisualCommand::ExecuteCommand()
 				ConsoleUI ui;
 				ui.SetOutputPrinter(printer);
 				ui.SetVisioner(visioner);
-				ui.MakeCursorThread();
+				ui.MakeActionHandlerThread();
+				FinalAnalyzeProcedure finalAnalyzeProcedure;
+				MakeBinaryAnalyzedFile binaryMakerAction;
+				ThreadCloseProcedure threadCloseProcedure;
+				threadCloseProcedure.SetThreadDistrubutor(distributor);
+				ui.AddKeyBindAction('p', &finalAnalyzeProcedure);
+				ui.AddKeyBindAction('e', &binaryMakerAction);
+				ui.AddKeyBindAction('q', &threadCloseProcedure);
 				while (true) {
 					try {
 						visioner.makeSnapshot();
@@ -65,10 +54,11 @@ bool VisualCommand::ExecuteCommand()
 					}
 					ui.DrawUI();
 					visioner.closeProcs();
-					if (distributor->GetThread() == nullptr) break;
+					if (!distributor->isExist())
+						break;
 				}
 			});
-			interfaceThread->detach();
+			//interfaceThread->detach();
 		}
 		return true;
 	}
@@ -78,4 +68,34 @@ bool VisualCommand::SetDistributor(ThreadDistributor* distributor) {
 	if (this->distributor != nullptr) return false;
 	this->distributor = distributor;
 	return true;
+}
+
+bool TimerCommand::ExecuteCommand() {
+	std::smatch match;
+	if (std::regex_match(command, match, std::regex("timer +(\\d*):(\\d*):(\\d*)"))) {
+		char seconds = atoi(match[1].str().c_str());
+		char minutes = atoi(match[2].str().c_str());
+		char hours = atoi(match[3].str().c_str());
+		seconds = 59 < seconds ?  59 : (0 > seconds ? 0 : seconds);
+		minutes = 59 < minutes ? 59 : (0 > minutes ? 0 : minutes);
+		hours = 23 < hours ? 23 : (0 > hours ? 0 : hours);
+		tm time;
+		time.tm_sec = seconds;
+		time.tm_min = minutes;
+		time.tm_hour = hours;
+		this->timer->SetTimerRate(time);
+		std::cout << time.tm_sec << time.tm_min << time.tm_hour << std::endl;
+		return true;
+	}
+	return false;
+}
+ISystemTimer* TimerCommand::GetTimer() {
+	return this->timer;
+}
+TimerCommand::TimerCommand() {
+	this->timer = new SystemTimer();
+	timer->SetTimerAction(nullptr);
+}
+TimerCommand::~TimerCommand() {
+	delete this->timer;
 }

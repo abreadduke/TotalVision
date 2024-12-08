@@ -121,9 +121,8 @@ void ConsoleUI::SetOutputPrinter(const ProcessPrinter& printer) {
 void ConsoleUI::SetVisioner(ProcessVisioner& visioner) {
 	this->visioner = &visioner;
 }
-void ConsoleUI::MakeCursorThread() {
-	std::thread cursorthread(&ConsoleUI::CursorScrolling, this);
-	cursorthread.detach();
+void ConsoleUI::MakeActionHandlerThread() {
+	actionHandling = std::thread(&ConsoleUI::ButtonActionsHandler, this);
 }
 void ConsoleUI::DrawUI() {
 	timeAnalyzerMutex.lock();
@@ -173,8 +172,26 @@ void ConsoleUI::DrawUI() {
 	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	//system("cls");
 }
-void ConsoleUI::CursorScrolling() {
-	while (true) {
+const TimeAnalyzer* ConsoleUI::GetAnalyzer()
+{
+	return &(this->timeAnalyzer);
+}
+const ProcessVisioner* ConsoleUI::GetVisioner()
+{
+	return this->visioner;
+}
+void ConsoleUI::AddKeyBindAction(const char key, IExecutableProcedure* action)
+{
+	this->keyBindActions.insert(std::make_pair(key, action));
+}
+ConsoleUI::~ConsoleUI()
+{
+	this->running = false;
+	if (this->actionHandling.joinable())
+		actionHandling.join();
+}
+void ConsoleUI::ButtonActionsHandler() {
+	while (running) {
 		char sym = _getch();
 		switch (sym) {
 		case 's':
@@ -187,37 +204,109 @@ void ConsoleUI::CursorScrolling() {
 			printercursor--;
 			cursormutex.unlock();
 			continue;
-		case 'q': {
-			StorageReader* reader = new BinaryReader();
-			std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
-			for (auto filepath : std::filesystem::directory_iterator(".")) {
-				std::string filename = filepath.path().string();
-				if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
-					auto parsedSnapshot = reader->ReadStorage(filename);
-					parsedSnapshots.push_back(parsedSnapshot);
-				}
+		default: {
+			auto actionPair = this->keyBindActions.find(sym);
+			if (actionPair != this->keyBindActions.end()) {
+				auto action = actionPair->second;
+				action->Execute(this);
 			}
-			delete reader;
-			MidTimeAnalyzer midAnalyzer;
-			DataStorage* ds = new XLSStorage();
-			std::string filepath = "analitics.xlsx";
-			midAnalyzer.Analyze(*visioner, parsedSnapshots);
-			ds->SaveToFile(midAnalyzer, filepath);
-			delete ds;
-			continue;
+			break;
 		}
-		case 'e':
-			//XLSStorage ds;
-			DataStorage* ds = new BinaryStorage();
-			std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-			std::tm* nowDate = std::localtime(&time);
-			//
-			std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
-			timeAnalyzerMutex.lock();
-			ds->SaveToFile(timeAnalyzer, filepath);
-			timeAnalyzerMutex.unlock();
-			delete ds;
-			continue;
+		}
+		//case 'p': {
+		//	//StorageReader* reader = new BinaryReader();
+		//	//std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
+		//	//for (auto filepath : std::filesystem::directory_iterator(".")) {
+		//	//	std::string filename = filepath.path().string();
+		//	//	if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
+		//	//		auto parsedSnapshot = reader->ReadStorage(filename);
+		//	//		parsedSnapshots.push_back(parsedSnapshot);
+		//	//	}
+		//	//}
+		//	//delete reader;
+		//	//MidTimeAnalyzer midAnalyzer;
+		//	//DataStorage* ds = new XLSStorage();
+		//	//std::string filepath = "analitics.xlsx";
+		//	//midAnalyzer.Analyze(*visioner, parsedSnapshots);
+		//	//ds->SaveToFile(midAnalyzer, filepath);
+		//	//delete ds;
+		//	continue;
+		//}
+		//case 'q': {
+		//
+		//	continue;
+		//}
+		//case 'e':
+		//	//XLSStorage ds;
+		//
+		//	//DataStorage* ds = new BinaryStorage();
+		//	//std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		//	//std::tm* nowDate = std::localtime(&time);
+		//	////
+		//	//std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
+		//	//timeAnalyzerMutex.lock();
+		//	//ds->SaveToFile(timeAnalyzer, filepath);
+		//	//timeAnalyzerMutex.unlock();
+		//	//delete ds;
+		//	continue;
+		//}	
+	}
+}
+
+ThreadCloseProcedure::ThreadCloseProcedure()
+{
+}
+
+void ThreadCloseProcedure::Execute(ConsoleUI* consoleui)
+{
+	if(this->distributor)
+		this->distributor->ClearThread();
+}
+
+void ThreadCloseProcedure::SetThreadDistrubutor(ThreadDistributor* distributor)
+{
+	this->distributor = distributor;
+}
+FinalAnalyzeProcedure::FinalAnalyzeProcedure()
+{
+}
+void FinalAnalyzeProcedure::Execute(ConsoleUI* consoleui)
+{
+	StorageReader* reader = new BinaryReader();
+	std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
+	for (auto filepath : std::filesystem::directory_iterator(".")) {
+		std::string filename = filepath.path().string();
+		if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
+			auto parsedSnapshot = reader->ReadStorage(filename);
+			parsedSnapshots.push_back(parsedSnapshot);
 		}
 	}
+	delete reader;
+	MidTimeAnalyzer midAnalyzer;
+	DataStorage* ds = new XLSStorage();
+	std::string filepath = "analitics.xlsx";
+	midAnalyzer.Analyze(*visioner, parsedSnapshots);
+	ds->SaveToFile(midAnalyzer, filepath);
+	delete ds;
+}
+
+MakeBinaryAnalyzedFile::MakeBinaryAnalyzedFile()
+{
+
+}
+void MakeBinaryAnalyzedFile::Execute(ConsoleUI* consoleui) {
+	DataStorage* ds = new BinaryStorage();
+	std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::tm* nowDate = std::localtime(&time);
+	//
+	std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
+	consoleui->timeAnalyzerMutex.lock();
+	SaveToFile((TimeAnalyzer&)*(consoleui->GetAnalyzer()), ds, filepath);
+	consoleui->timeAnalyzerMutex.unlock();
+	delete ds;
+}
+
+void MakeAnalyzedFile::SaveToFile(TimeAnalyzer& timeAnalyzer, DataStorage* dataStorage, std::string filename)
+{
+	dataStorage->SaveToFile(timeAnalyzer, filename);
 }

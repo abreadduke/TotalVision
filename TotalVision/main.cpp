@@ -1,12 +1,12 @@
 //#define TEST
 
 #ifndef TEST
+#include "commandhandler.hpp"
 #include <windows.h>
 #include <iostream>
 #include "visioner.hpp"
 #include "analyzer.hpp"
 #include "consoleinterface.hpp"
-#include "commandhandler.hpp"
 
 int main() {
 	setlocale(LC_ALL, "ru");
@@ -30,9 +30,12 @@ int main() {
 	std::string command;
 	ConsoleReadCommand reader;
 	VisualCommand visc;
+	TimerCommand timerCommand;
+	ISystemTimer* timer = timerCommand.GetTimer();
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
 	reader.AddCommandHandler(&visc);
+	reader.AddCommandHandler(&timerCommand);
 	while (true) {
 		if (ProgrammInterfaceThreadDistr->GetThread() == nullptr) {
 			std::getline(std::cin, command);

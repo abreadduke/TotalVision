@@ -147,6 +147,7 @@
     <ClCompile Include="commandhandler.cpp" />
     <ClCompile Include="consoleinterface.cpp" />
     <ClCompile Include="datastorage.cpp" />
+    <ClCompile Include="distribute.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tests\timings_test.cpp" />
     <ClCompile Include="timings.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="commandhandler.hpp" />
     <ClInclude Include="consoleinterface.hpp" />
     <ClInclude Include="datastorage.hpp" />
+    <ClInclude Include="distribute.hpp" />
     <ClInclude Include="tests\timings_test.hpp" />
     <ClInclude Include="timings.hpp" />
     <ClInclude Include="visioner.hpp" />
