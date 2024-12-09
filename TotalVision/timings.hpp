@@ -17,9 +17,7 @@ class MakeSnapshotAnalyze : public ITimerAction {
 public:
 	MakeSnapshotAnalyze();
 	virtual void Action() override;
-	void SetAnalyzer(TimeAnalyzer* timeAnalyzer) {
-		this->timeAnalyzer = timeAnalyzer;
-	}
+	void SetAnalyzer(TimeAnalyzer* timeAnalyzer);
 	void SetSavingDirectory(std::string directory);
 private:
 	std::string directory = ".";
@@ -27,8 +25,8 @@ private:
 };
 class ISystemTimer {
 public:
-	virtual void SetTimerRate(tm& time) = 0;
-	virtual void SetTimerRate(time_t& time) = 0;
+	virtual void SetTimerRate(const tm& time) = 0;
+	virtual void SetTimerRate(const time_t& time) = 0;
 	virtual void DiscountOneSecondFromTimer() = 0;
 	virtual void ActivateTimerAction() = 0;
 	virtual void SetTimerAction(ITimerAction* timerAction) = 0;
@@ -38,8 +36,8 @@ class SystemTimer : public ISystemTimer {
 public:
 	SystemTimer();
 	virtual time_t GetTimerRate() override;
-	virtual void SetTimerRate(tm& time) override;
-	virtual void SetTimerRate(time_t& time) override;
+	virtual void SetTimerRate(const tm& time) override;
+	virtual void SetTimerRate(const time_t& time) override;
 	virtual void DiscountOneSecondFromTimer() override;
 	virtual void ActivateTimerAction() override;
 	virtual void SetTimerAction(ITimerAction* timerAction) override;
@@ -61,13 +59,13 @@ public:
 	TimerStateSaver(ISystemTimer* timer, std::string filepath);
 	virtual void SaveTimer() override;
 private:
-	std::string filepath;
-	ISystemTimer* timer;
+	std::string filepath = "";
+	ISystemTimer* timer = nullptr;
 };
 class TimerStateReader : public ITimerStateReader {
 public:
 	TimerStateReader(std::string filename);
 	virtual ISystemTimer* GetSystemTimer() override;
 private:
-	std::string filepath;
+	std::string filepath = "";
 };

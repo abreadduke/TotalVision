@@ -6,6 +6,8 @@
 #include "visioner.hpp"
 #include "timings.hpp"
 #include "consoleinterface.hpp"
+#include <fstream>
+#include "dynamicsettings.hpp"
 
 class ICommand {
 public:
@@ -41,8 +43,22 @@ class TimerCommand : public Command {
 public:
 	TimerCommand();
 	virtual bool ExecuteCommand() override;
-	virtual ISystemTimer* GetTimer();
+	virtual ISystemTimer* GetTimer() const;
 	~TimerCommand();
 private:
+	ISystemTimer* timer = nullptr;
+};
+class TimeFacadeSystem {
+public:
+	TimeFacadeSystem();
+	TimeFacadeSystem(std::string timerPath, ISystemTimer* timer, ITimerAction * timerAction);
+	bool Setup();
+	void UpdateSeconds();
+	~TimeFacadeSystem();
+private:
+	ITimerAction* timerAction = nullptr;
+	ITimerStateReader* timeReader = nullptr;
+	ITimerStateSaver* timeWriter = nullptr;
+	std::string timerPath;
 	ISystemTimer* timer = nullptr;
 };

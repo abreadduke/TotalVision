@@ -1,9 +1,9 @@
 #include "timings.hpp"
 
-void SystemTimer::SetTimerRate(tm &time) {
+void SystemTimer::SetTimerRate(const tm &time) {
 	this->timeRate = time.tm_sec + time.tm_min * 60 + time.tm_hour * 60 * 60;
 }
-void SystemTimer::SetTimerRate(time_t& time)
+void SystemTimer::SetTimerRate(const time_t& time)
 {
 	this->timeRate = time;
 }
@@ -31,16 +31,13 @@ SystemTimer::SystemTimer() {
 
 }
 ISystemTimer* TimerStateReader::GetSystemTimer() {
-	std::ifstream openedBinaryFile(this->filepath);
+	std::ifstream openedBinaryFile(this->filepath, std::ios::binary);
+	time_t rate = 0;
 	if (openedBinaryFile.is_open()) {
-		SystemTimer timer;
-		time_t rate;
-		openedBinaryFile.read((char*)&rate, sizeof(rate));
-		timer.SetTimerRate(rate);
-		return &timer;
-	}
-	else {
-		throw std::exception(FILE_OPENING_EXCEPTION_MESSAGE);
+		std::unique_ptr<ISystemTimer> timer(new SystemTimer());
+		openedBinaryFile.read((char*)&rate, sizeof(time_t));
+		timer->SetTimerRate(rate);
+		return timer.get();
 	}
 }
 MakeSnapshotAnalyze::MakeSnapshotAnalyze() {}
@@ -53,6 +50,10 @@ void MakeSnapshotAnalyze::Action()
 	std::string filepath = this->directory + "\\parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
 	ds->SaveToFile(*timeAnalyzer, filepath);
 	delete ds;
+}
+void MakeSnapshotAnalyze::SetAnalyzer(TimeAnalyzer* timeAnalyzer)
+{
+	this->timeAnalyzer = timeAnalyzer;
 }
 void MakeSnapshotAnalyze::SetSavingDirectory(std::string directory)
 {

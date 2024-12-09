@@ -8,6 +8,22 @@
 #include "analyzer.hpp"
 #include "consoleinterface.hpp"
 
+#define TIMER_IO_FILE_PATH "./timer.timer"
+
+TimeFacadeSystem* timeFacadeSystem = nullptr;
+ThreadDistributor* ProgrammInterfaceThreadDistr = nullptr;
+std::thread timerSecondsUpdate;
+void Closing() {
+	timerSecondsUpdate.detach();
+	delete timeFacadeSystem;
+	delete ProgrammInterfaceThreadDistr;
+}
+BOOL WINAPI ConsoleSignalReceiver(_In_ DWORD dwCtrlType) {
+	if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT) {
+		Closing();
+	}
+	return true;
+}
 int main() {
 	setlocale(LC_ALL, "ru");
 	//ProcessVisioner visioner;
@@ -27,7 +43,11 @@ int main() {
 	//	ui.DrawUI();
 	//	visioner.closeProcs();
 	//}
-	std::string command;
+
+	//Bind console exit actions to the procedure
+	SetConsoleCtrlHandler(ConsoleSignalReceiver, true);
+
+	//Setup programm console commands
 	ConsoleReadCommand reader;
 	VisualCommand visc;
 	TimerCommand timerCommand;
@@ -36,7 +56,27 @@ int main() {
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
 	reader.AddCommandHandler(&visc);
 	reader.AddCommandHandler(&timerCommand);
+	//
+	//Setup TimeSystems
+	const std::string timerPath = TIMER_IO_FILE_PATH;
+	//ISystemTimer* systemTimer = new SystemTimer();
+	TimeAnalyzer timerAnalyzer;
+	MakeSnapshotAnalyze timerAction;
+	timerAction.SetAnalyzer(&timerAnalyzer);
+	timerAction.SetSavingDirectory(".");
+	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction);
+	timeFacadeSystem->Setup();
+	TimeFacadeSystem* fassys = timeFacadeSystem;
+	timerSecondsUpdate = std::thread([&fassys]() {
+		while (true) {
+			if (DynamicSettings::IsTimerActive()) {
+				fassys->UpdateSeconds();
+			}
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	});
 	while (true) {
+		std::string command;
 		if (ProgrammInterfaceThreadDistr->GetThread() == nullptr) {
 			std::getline(std::cin, command);
 			reader.SetCommand(command);
@@ -45,7 +85,8 @@ int main() {
 			}
 		}
 	}
-	delete ProgrammInterfaceThreadDistr;
+	//Exiting
+	Closing();
 	return 0;
 }
 #else

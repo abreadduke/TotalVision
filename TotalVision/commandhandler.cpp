@@ -50,7 +50,10 @@ bool VisualCommand::ExecuteCommand()
 					}
 					catch (std::runtime_error& error) {
 						std::cout << error.what() << std::endl;
-						return -1;
+						if (!distributor->isExist()) {
+							distributor->ClearThread();
+							break;
+						}
 					}
 					ui.DrawUI();
 					visioner.closeProcs();
@@ -84,18 +87,75 @@ bool TimerCommand::ExecuteCommand() {
 		time.tm_min = minutes;
 		time.tm_hour = hours;
 		this->timer->SetTimerRate(time);
-		std::cout << time.tm_sec << time.tm_min << time.tm_hour << std::endl;
+		//std::cout << time.tm_sec << time.tm_min << time.tm_hour << std::endl;
+		return true;
+	}
+	else if (std::regex_match(command, match, std::regex("timer +activate"))) {
+		time_t timerRateFuse = 3;
+		if (timer->GetTimerRate() < timerRateFuse) {
+			timer->SetTimerRate(timerRateFuse);
+		}
+		DynamicSettings::SetTimerActiveMode(true);
+		return true;
+	}
+	else if (std::regex_match(command, match, std::regex("timer +diactivate"))) {
+		DynamicSettings::SetTimerActiveMode(false);
 		return true;
 	}
 	return false;
 }
-ISystemTimer* TimerCommand::GetTimer() {
+ISystemTimer* TimerCommand::GetTimer() const{
 	return this->timer;
 }
 TimerCommand::TimerCommand() {
-	this->timer = new SystemTimer();
-	timer->SetTimerAction(nullptr);
+	if (!this->timer) {
+		this->timer = new SystemTimer();
+		MakeSnapshotAnalyze timerAction;
+		timer->SetTimerAction(&timerAction);
+	}
 }
 TimerCommand::~TimerCommand() {
 	delete this->timer;
 }
+TimeFacadeSystem::TimeFacadeSystem()
+{
+}
+TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, ISystemTimer* timer, ITimerAction* timerAction)
+{
+	this->timerPath = timerPath;
+	this->timer = timer;
+	this->timerAction = timerAction;
+}
+
+bool TimeFacadeSystem::Setup()
+{
+	bool returnValue = true;
+	timeReader = new TimerStateReader(timerPath);
+	timeWriter = new TimerStateSaver(timer, timerPath);
+	ISystemTimer* receivedSystemTimer = (timeReader->GetSystemTimer());
+	if (receivedSystemTimer != nullptr && timer != nullptr) {
+		time_t timeRate = receivedSystemTimer->GetTimerRate();
+		this->timer->SetTimerRate(timeRate);
+	}
+	else {
+		returnValue = false;
+	}
+	if(timer)
+		this->timer->SetTimerAction(this->timerAction);
+	return returnValue;
+}
+
+void TimeFacadeSystem::UpdateSeconds()
+{
+	if (this->timer != nullptr) {
+		this->timer->DiscountOneSecondFromTimer();
+	}
+}
+
+TimeFacadeSystem::~TimeFacadeSystem()
+{
+	timeWriter->SaveTimer();
+	delete timeReader;
+	delete timeWriter;
+}
+
