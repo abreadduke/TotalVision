@@ -36,9 +36,11 @@ ISystemTimer* TimerStateReader::GetSystemTimer() {
 	if (openedBinaryFile.is_open()) {
 		std::unique_ptr<ISystemTimer> timer(new SystemTimer());
 		openedBinaryFile.read((char*)&rate, sizeof(time_t));
+		openedBinaryFile.close();
 		timer->SetTimerRate(rate);
 		return timer.get();
 	}
+	return nullptr;
 }
 MakeSnapshotAnalyze::MakeSnapshotAnalyze() {}
 void MakeSnapshotAnalyze::Action()
@@ -68,6 +70,7 @@ void TimerStateSaver::SaveTimer() {
 	if (openedBinaryFile.is_open()) {
 		time_t rate = this->timer->GetTimerRate();
 		openedBinaryFile.write((const char*)&rate, sizeof(rate));
+		openedBinaryFile.close();
 	}
 	else {
 		throw std::exception(FILE_OPENING_EXCEPTION_MESSAGE);
