@@ -288,6 +288,7 @@ void FinalAnalyzeProcedure::Execute(ConsoleUI* consoleui)
 	midAnalyzer.Analyze(*visioner, parsedSnapshots);
 	ds->SaveToFile(midAnalyzer, filepath);
 	delete ds;
+	ds = nullptr;
 }
 
 MakeBinaryAnalyzedFile::MakeBinaryAnalyzedFile()
@@ -309,4 +310,18 @@ void MakeBinaryAnalyzedFile::Execute(ConsoleUI* consoleui) {
 void MakeAnalyzedFile::SaveToFile(TimeAnalyzer& timeAnalyzer, DataStorage* dataStorage, std::string filename)
 {
 	dataStorage->SaveToFile(timeAnalyzer, filename);
+}
+
+MakeXLSAnalyzedFile::MakeXLSAnalyzedFile()
+{
+}
+
+void MakeXLSAnalyzedFile::Execute(ConsoleUI* consoleui)
+{
+	DataStorage* ds = new XLSStorage();
+	std::string filepath = "readable_list.xlsx";
+	consoleui->timeAnalyzerMutex.lock();
+	SaveToFile((TimeAnalyzer&)*(consoleui->GetAnalyzer()), ds, filepath);
+	consoleui->timeAnalyzerMutex.unlock();
+	delete ds;
 }

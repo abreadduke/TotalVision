@@ -1,7 +1,6 @@
 #include "analyzer.hpp"
 #include <fstream>
 #include <Aspose.Cells.h>
-#include <set>
 
 #define _STR(fig) std::to_string(fig)
 

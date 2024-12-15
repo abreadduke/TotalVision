@@ -61,8 +61,10 @@ int main() {
 	const std::string timerPath = TIMER_IO_FILE_PATH;
 	//ISystemTimer* systemTimer = new SystemTimer();
 	TimeAnalyzer timerAnalyzer;
+	ProcessVisioner visioner;
 	MakeSnapshotAnalyze timerAction;
 	timerAction.SetAnalyzer(&timerAnalyzer);
+	timerAction.SetVisioner(&visioner);
 	timerAction.SetSavingDirectory(".");
 	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction);
 	timeFacadeSystem->Setup();

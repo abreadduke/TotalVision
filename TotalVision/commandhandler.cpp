@@ -40,10 +40,13 @@ bool VisualCommand::ExecuteCommand()
 				FinalAnalyzeProcedure finalAnalyzeProcedure;
 				MakeBinaryAnalyzedFile binaryMakerAction;
 				ThreadCloseProcedure threadCloseProcedure;
+				MakeXLSAnalyzedFile xlsMakerAction;
 				threadCloseProcedure.SetThreadDistrubutor(distributor);
+				//key actions
 				ui.AddKeyBindAction('p', &finalAnalyzeProcedure);
 				ui.AddKeyBindAction('e', &binaryMakerAction);
 				ui.AddKeyBindAction('q', &threadCloseProcedure);
+				ui.AddKeyBindAction('x', &xlsMakerAction);
 				while (true) {
 					try {
 						visioner.makeSnapshot();
@@ -157,5 +160,7 @@ TimeFacadeSystem::~TimeFacadeSystem()
 	timeWriter->SaveTimer();
 	delete timeReader;
 	delete timeWriter;
+	timeReader = nullptr;
+	timeWriter = nullptr;
 }
 

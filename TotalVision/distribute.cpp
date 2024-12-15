@@ -17,6 +17,7 @@ bool ThreadDistributor::ClearThread() {
 	this->isThreadExist = false;
 	this->t->join();
 	delete this->t;
+	this->t = nullptr;
 	return true;
 }
 std::thread* ThreadDistributor::GetThread() {

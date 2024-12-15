@@ -18,9 +18,11 @@ public:
 	MakeSnapshotAnalyze();
 	virtual void Action() override;
 	void SetAnalyzer(TimeAnalyzer* timeAnalyzer);
+	void SetVisioner(ProcessVisioner* visioner);
 	void SetSavingDirectory(std::string directory);
 private:
 	std::string directory = ".";
+	ProcessVisioner* visioner = nullptr;
 	TimeAnalyzer* timeAnalyzer = nullptr;
 };
 class ISystemTimer {

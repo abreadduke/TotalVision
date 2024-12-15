@@ -91,3 +91,8 @@ public:
 	MakeBinaryAnalyzedFile();
 	virtual void Execute(ConsoleUI* consoleui) override;
 };
+class MakeXLSAnalyzedFile : public MakeAnalyzedFile {
+public:
+	MakeXLSAnalyzedFile();
+	virtual void Execute(ConsoleUI* consoleui) override;
+};

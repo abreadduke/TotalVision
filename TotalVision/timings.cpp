@@ -43,14 +43,21 @@ ISystemTimer* TimerStateReader::GetSystemTimer() {
 	return nullptr;
 }
 MakeSnapshotAnalyze::MakeSnapshotAnalyze() {}
+void MakeSnapshotAnalyze::SetVisioner(ProcessVisioner* visioner) {
+	this->visioner = visioner;
+}
 void MakeSnapshotAnalyze::Action()
 {
 	if (timeAnalyzer == nullptr) return;
+	visioner->makeSnapshot();
+	timeAnalyzer->Analyze(*visioner);
 	DataStorage* ds = new BinaryStorage();
 	std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	std::tm* nowDate = std::localtime(&time);
 	std::string filepath = this->directory + "\\parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
 	ds->SaveToFile(*timeAnalyzer, filepath);
+	timeAnalyzer->ClearResults();
+	visioner->closeProcs();
 	delete ds;
 }
 void MakeSnapshotAnalyze::SetAnalyzer(TimeAnalyzer* timeAnalyzer)
