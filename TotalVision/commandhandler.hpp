@@ -43,22 +43,25 @@ class TimerCommand : public Command {
 public:
 	TimerCommand();
 	virtual bool ExecuteCommand() override;
-	virtual ISystemTimer* GetTimer() const;
+	virtual YieldingSystemTimer* GetTimer() const;
+	virtual void SetTimer(YieldingSystemTimer* timer);
 	~TimerCommand();
 private:
-	ISystemTimer* timer = nullptr;
+	YieldingSystemTimer* timer = nullptr;
 };
 class TimeFacadeSystem {
 public:
 	TimeFacadeSystem();
-	TimeFacadeSystem(std::string timerPath, ISystemTimer* timer, ITimerAction * timerAction);
+	TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction * timerAction);
+	TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction * timerAction, ITimerAction* endingTimerAction);
 	bool Setup();
 	void UpdateSeconds();
 	~TimeFacadeSystem();
 private:
+	ITimerAction* endingTimerAction = nullptr;
 	ITimerAction* timerAction = nullptr;
 	ITimerStateReader* timeReader = nullptr;
 	ITimerStateSaver* timeWriter = nullptr;
 	std::string timerPath;
-	ISystemTimer* timer = nullptr;
+	AbstractSystemTimer* timer = nullptr;
 };

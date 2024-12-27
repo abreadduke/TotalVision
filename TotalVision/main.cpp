@@ -7,7 +7,6 @@
 #include "visioner.hpp"
 #include "analyzer.hpp"
 #include "consoleinterface.hpp"
-
 #define TIMER_IO_FILE_PATH "./timer.timer"
 
 TimeFacadeSystem* timeFacadeSystem = nullptr;
@@ -51,7 +50,8 @@ int main() {
 	ConsoleReadCommand reader;
 	VisualCommand visc;
 	TimerCommand timerCommand;
-	ISystemTimer* timer = timerCommand.GetTimer();
+	YieldingSystemTimer* timer = new YieldingSystemTimer();
+	timerCommand.SetTimer(timer);
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
 	reader.AddCommandHandler(&visc);
@@ -66,7 +66,7 @@ int main() {
 	timerAction.SetAnalyzer(&timerAnalyzer);
 	timerAction.SetVisioner(&visioner);
 	timerAction.SetSavingDirectory(".");
-	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction);
+	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction, &timerAction);
 	timeFacadeSystem->Setup();
 	TimeFacadeSystem* fassys = timeFacadeSystem;
 	timerSecondsUpdate = std::thread([&fassys]() {

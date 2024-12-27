@@ -107,12 +107,21 @@ bool TimerCommand::ExecuteCommand() {
 	}
 	return false;
 }
-ISystemTimer* TimerCommand::GetTimer() const{
+YieldingSystemTimer* TimerCommand::GetTimer() const{
 	return this->timer;
+}
+void TimerCommand::SetTimer(YieldingSystemTimer* timer)
+{
+	if (!this->timer) {
+		delete this->timer;
+	}
+	MakeSnapshotAnalyze timerAction;
+	this->timer = timer;
+	this->timer->SetTimerAction(&timerAction);
 }
 TimerCommand::TimerCommand() {
 	if (!this->timer) {
-		this->timer = new SystemTimer();
+		this->timer = new YieldingSystemTimer();
 		MakeSnapshotAnalyze timerAction;
 		timer->SetTimerAction(&timerAction);
 	}
@@ -123,22 +132,30 @@ TimerCommand::~TimerCommand() {
 TimeFacadeSystem::TimeFacadeSystem()
 {
 }
-TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, ISystemTimer* timer, ITimerAction* timerAction)
+TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction* timerAction)
 {
 	this->timerPath = timerPath;
 	this->timer = timer;
 	this->timerAction = timerAction;
 }
 
+TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction* timerAction, ITimerAction* endingTimerAction) : TimeFacadeSystem(timerPath, timer, timerAction)
+{
+	this->endingTimerAction = endingTimerAction;
+}
+
 bool TimeFacadeSystem::Setup()
 {
 	bool returnValue = true;
-	timeReader = new TimerStateReader(timerPath);
-	timeWriter = new TimerStateSaver(timer, timerPath);
-	ISystemTimer* receivedSystemTimer = (timeReader->GetSystemTimer());
+	timeReader = new TimerTimeFileReader(timerPath);
+	timeWriter = new TimerTimeFileSaver(timer, timerPath);
+	AbstractSystemTimer* receivedSystemTimer = (timeReader->GetSystemTimer());
 	if (receivedSystemTimer != nullptr && timer != nullptr) {
 		time_t timeRate = receivedSystemTimer->GetTimerRate();
+		int actionCount = dynamic_cast<YieldingSystemTimer*>(receivedSystemTimer)->GetActionCounts();
+		delete receivedSystemTimer;
 		this->timer->SetTimerRate(timeRate);
+		dynamic_cast<YieldingSystemTimer*>(timer)->SetActionCounts(actionCount);
 	}
 	else {
 		returnValue = false;
@@ -152,6 +169,13 @@ void TimeFacadeSystem::UpdateSeconds()
 {
 	if (this->timer != nullptr) {
 		this->timer->DiscountOneSecondFromTimer();
+		if (this->timer->IsTimerCompleted()) {
+			DynamicSettings::SetTimerActiveMode(false);
+			timer->Continue();
+			if (this->endingTimerAction != nullptr) {
+				endingTimerAction->Action();
+			}
+		}
 	}
 }
 
