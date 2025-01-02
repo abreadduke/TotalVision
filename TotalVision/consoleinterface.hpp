@@ -76,6 +76,7 @@ protected:
 class FinalAnalyzeProcedure : public IExecutableProcedure {
 public:
 	FinalAnalyzeProcedure();
+	static void AnalyzeProcedure(ProcessVisioner& visioner, const std::string& filepath);
 	virtual void Execute(ConsoleUI* consoleui) override;
 protected:
 	ProcessVisioner* visioner;

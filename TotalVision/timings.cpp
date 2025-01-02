@@ -225,3 +225,21 @@ void TimerTimeFileSaver::SaveTimer()
 	}
 }
 
+MakeXLSAnalyze::MakeXLSAnalyze()
+{
+	
+}
+
+MakeXLSAnalyze::MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, const std::string& directory)
+{
+	SetAnalyzer(timeAnalyzer);
+	SetVisioner(visioner);
+	SetSavingDirectory(directory);
+}
+
+void MakeXLSAnalyze::Action()
+{
+	visioner->makeSnapshot();
+	FinalAnalyzeProcedure::AnalyzeProcedure(*visioner, directory);
+	visioner->closeProcs();
+}

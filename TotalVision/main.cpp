@@ -63,10 +63,11 @@ int main() {
 	TimeAnalyzer timerAnalyzer;
 	ProcessVisioner visioner;
 	MakeSnapshotAnalyze timerAction;
+	MakeXLSAnalyze endignTimerAction(&timerAnalyzer, &visioner, FINAL_EXEL_TABLE_PATH);
 	timerAction.SetAnalyzer(&timerAnalyzer);
 	timerAction.SetVisioner(&visioner);
 	timerAction.SetSavingDirectory(".");
-	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction, &timerAction);
+	timeFacadeSystem = new TimeFacadeSystem(timerPath, timer, &timerAction, &endignTimerAction);
 	timeFacadeSystem->Setup();
 	TimeFacadeSystem* fassys = timeFacadeSystem;
 	timerSecondsUpdate = std::thread([&fassys]() {

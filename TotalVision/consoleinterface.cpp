@@ -270,7 +270,7 @@ void ThreadCloseProcedure::SetThreadDistrubutor(ThreadDistributor* distributor)
 FinalAnalyzeProcedure::FinalAnalyzeProcedure()
 {
 }
-void FinalAnalyzeProcedure::Execute(ConsoleUI* consoleui)
+void FinalAnalyzeProcedure::AnalyzeProcedure(ProcessVisioner &visioner, const std::string& filepath)
 {
 	StorageReader* reader = new BinaryReader();
 	std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
@@ -284,11 +284,15 @@ void FinalAnalyzeProcedure::Execute(ConsoleUI* consoleui)
 	delete reader;
 	MidTimeAnalyzer midAnalyzer;
 	DataStorage* ds = new XLSStorage();
-	std::string filepath = "analitics.xlsx";
-	midAnalyzer.Analyze(*visioner, parsedSnapshots);
+	midAnalyzer.Analyze(visioner, parsedSnapshots);
 	ds->SaveToFile(midAnalyzer, filepath);
 	delete ds;
 	ds = nullptr;
+}
+void FinalAnalyzeProcedure::Execute(ConsoleUI* consoleui)
+{
+	ProcessVisioner visioner = *(consoleui->GetVisioner());
+	AnalyzeProcedure(visioner, "analitics.xls");
 }
 
 MakeBinaryAnalyzedFile::MakeBinaryAnalyzedFile()

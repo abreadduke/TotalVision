@@ -6,8 +6,10 @@
 #include "datastorage.hpp"
 #include "visioner.hpp"
 #include "analyzer.hpp"
+#include "consoleinterface.hpp"
 
 #define FILE_OPENING_EXCEPTION_MESSAGE "File open error"
+#define FINAL_EXEL_TABLE_PATH "result_table.xls"
 class TimerStateSaver;
 class TimerStateReader;
 class ITimerAction {
@@ -21,10 +23,16 @@ public:
 	void SetAnalyzer(TimeAnalyzer* timeAnalyzer);
 	void SetVisioner(ProcessVisioner* visioner);
 	void SetSavingDirectory(std::string directory);
-private:
+protected:
 	std::string directory = ".";
 	ProcessVisioner* visioner = nullptr;
 	TimeAnalyzer* timeAnalyzer = nullptr;
+};
+class MakeXLSAnalyze : public MakeSnapshotAnalyze {
+public:
+	MakeXLSAnalyze();
+	MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, const std::string& directory);
+	virtual void Action() override;
 };
 class AbstractSystemTimer {
 public:
