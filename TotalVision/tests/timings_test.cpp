@@ -10,7 +10,8 @@ void TestTimings() {
 	MakeSnapshotAnalyze timerAction;
 	timer.SetTimerAction(&timerAction);
 	TimerStateReader reader("temp\\time.bin");
-	TimerStateSaver saver(&timer, "temp\\time.bin");
+	AbstractSystemTimer* timer_ptr = &timer;
+	TimerStateSaver saver(timer_ptr, "temp\\time.bin");
 	saver.SaveTimer();
 	SystemTimer timer2;
 	MakeSnapshotAnalyze timerAction2;

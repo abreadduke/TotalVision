@@ -68,12 +68,12 @@ void MakeSnapshotAnalyze::SetSavingDirectory(std::string directory)
 {
 	this->directory = directory;
 }
-TimerStateSaver::TimerStateSaver(AbstractSystemTimer* timer, std::string filepath) {
+TimerStateSaver::TimerStateSaver(AbstractSystemTimer* &timer, std::string filepath) {
 	this->filepath = filepath;
-	this->timer = timer;
+	this->timer = &timer;
 }
 void TimerStateSaver::SaveTimer() {
-	timer->UseWriter(this);
+	(*timer)->UseWriter(this);
 	std::ofstream openedBinaryFile(filepath, std::ios::binary);
 	if (openedBinaryFile.is_open()) {
 		openedBinaryFile.write((const char*)&timeRate, sizeof(timeRate));
@@ -86,15 +86,18 @@ void TimerStateSaver::SaveTimer() {
 void TimerStateSaver::SaveAsYieldingSystemTimer(YieldingSystemTimer* yieldingSystemTimer)
 {
 	actionsCount = yieldingSystemTimer->GetActionCounts();
-	timerType = "YieldingSystemTimer";
 }
 void TimerStateSaver::SaveAsSystemTimer(SystemTimer *systemtimer)
 {
 	timeRate = systemtimer->GetTimerRate();
-	timerType = "SystemTimer";
 }
 void SystemTimer::SetTimerAction(ITimerAction* timerAction) {
 	this->actiovationAction = timerAction;
+}
+
+ITimerAction* SystemTimer::GetTimerAction() const
+{
+	return this->actiovationAction;
 }
 
 bool SystemTimer::IsTimerCompleted()
@@ -114,6 +117,11 @@ void SystemTimer::UseWriter(TimerStateSaver* saver)
 
 void SystemTimer::UseReader(TimerStateReader* reader)
 {
+}
+
+const std::string SystemTimer::GetType() const
+{
+	return TypeToString(SystemTimer);
 }
 
 YieldingSystemTimer::YieldingSystemTimer() : SystemTimer()
@@ -161,12 +169,16 @@ void YieldingSystemTimer::UseReader(TimerStateReader* reader)
 {
 }
 
+const std::string YieldingSystemTimer::GetType() const
+{
+	return TypeToString(YieldingSystemTimer);
+}
+
 TimerTimeFileReader::TimerTimeFileReader(std::string filename) : TimerStateReader(filename)
 {
 }
 #define GET_TIMER_TYPE_TEMPLATE(class_name) "\\[("#class_name")\\]"
 #define GENERATE_TIMER_TYPE_CONDITION(class_name)	if (std::regex_match(line, match, std::regex(GET_TIMER_TYPE_TEMPLATE(class_name)))) {\
-													type = TimerStateSaver::type::TT_##class_name;\
 													if (timer != nullptr) delete timer;\
 													timer = new class_name();\
 													}
@@ -182,7 +194,6 @@ AbstractSystemTimer* TimerTimeFileReader::GetSystemTimer()
 			std::string parameter;
 			std::string value;
 			std::smatch match;
-			auto type = TimerStateSaver::type::TT_None;
 			GENERATE_TIMER_TYPE_CONDITION(SystemTimer)
 			else GENERATE_TIMER_TYPE_CONDITION(YieldingSystemTimer)
 			else if (std::regex_match(line, match, std::regex("(\\S+)\\s*=\\s*(\\S+)"))) {
@@ -203,17 +214,17 @@ AbstractSystemTimer* TimerTimeFileReader::GetSystemTimer()
 }
 #undef GET_TIMER_TYPE_TEMPLATE
 #undef GENERATE_TIMER_TYPE_CONDITION
-TimerTimeFileSaver::TimerTimeFileSaver(AbstractSystemTimer* timer, std::string filepath) : TimerStateSaver(timer, filepath) {
+TimerTimeFileSaver::TimerTimeFileSaver(AbstractSystemTimer* &timer, std::string filepath) : TimerStateSaver(timer, filepath) {
 
 }
 void TimerTimeFileSaver::SaveTimer()
 {
-	timer->UseWriter((TimerStateSaver*)this);
+	(*this->timer)->UseWriter((TimerStateSaver*)this);
 	std::ofstream openedTimeFile(filepath);
-	if (timerType == "") return;
+	if ((*this->timer)->GetType() == UNDEFINED_TIMER_TYPE) return;
 	if (openedTimeFile.is_open()) {
 		time_t rate = timeRate;
-		std::string data = "[" + timerType + "]\n";
+		std::string data = "[" + (*this->timer)->GetType() + "]\n";
 		data += "rate=" + std::to_string(rate) + "\n";
 		if (actionsCount != 0)
 			data += "actions_count=" + std::to_string(actionsCount) + "\n";
@@ -242,4 +253,9 @@ void MakeXLSAnalyze::Action()
 	visioner->makeSnapshot();
 	FinalAnalyzeProcedure::AnalyzeProcedure(*visioner, directory);
 	visioner->closeProcs();
+}
+
+inline const std::string UndefinedTimerType::GetType() const
+{
+	return UNDEFINED_TIMER_TYPE;
 }

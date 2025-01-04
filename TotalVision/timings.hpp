@@ -34,13 +34,24 @@ public:
 	MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, const std::string& directory);
 	virtual void Action() override;
 };
-class AbstractSystemTimer {
+class ITimerType {
+public:
+	inline virtual const std::string GetType() const = 0;
+};
+#define UNDEFINED_TIMER_TYPE "UNDEFINED_TYPE"
+#define TypeToString(type) #type
+class UndefinedTimerType : public ITimerType{
+public:
+	inline virtual const std::string GetType() const override;
+};
+class AbstractSystemTimer : public UndefinedTimerType{
 public:
 	virtual void SetTimerRate(const tm& time) = 0;
 	virtual void SetTimerRate(const time_t& time) = 0;
 	virtual void DiscountOneSecondFromTimer() = 0;
 	virtual void ActivateTimerAction() = 0;
 	virtual void SetTimerAction(ITimerAction* timerAction) = 0;
+	virtual ITimerAction* GetTimerAction() const = 0;
 	virtual bool IsTimerCompleted() = 0;
 	virtual void UseWriter(TimerStateSaver* saver) = 0;
 	virtual void UseReader(TimerStateReader* reader) = 0;
@@ -56,10 +67,12 @@ public:
 	virtual void DiscountOneSecondFromTimer() override;
 	virtual void ActivateTimerAction() override;
 	virtual inline void SetTimerAction(ITimerAction* timerAction) override;
+	virtual ITimerAction* GetTimerAction() const override;
 	virtual inline bool IsTimerCompleted() override;
 	virtual inline void Continue() override;
 	virtual void UseWriter(TimerStateSaver* saver) override;
 	virtual void UseReader(TimerStateReader* reader) override;
+	inline virtual const std::string GetType() const override;
 protected:
 	bool timerCompleted = false;
 	ITimerAction *actiovationAction = nullptr;
@@ -76,6 +89,7 @@ public:
 	virtual void DiscountOneSecondFromTimer() override;
 	virtual void UseWriter(TimerStateSaver* saver) override;
 	virtual void UseReader(TimerStateReader* reader) override;
+	inline virtual const std::string GetType() const override;
 protected:
 	int actionCounts = 0;
 private:
@@ -93,21 +107,15 @@ public:
 };
 class TimerStateSaver : public ITimerStateSaver {
 public:
-	TimerStateSaver(AbstractSystemTimer* timer, std::string filepath);
+	TimerStateSaver(AbstractSystemTimer* &timer, std::string filepath);
 	virtual void SaveTimer() override;
 	virtual void SaveAsYieldingSystemTimer(YieldingSystemTimer* yieldingSystemTimer) override;
 	virtual void SaveAsSystemTimer(SystemTimer* systemtimer) override;
-	const enum type {
-		TT_SystemTimer,
-		TT_YieldingSystemTimer,
-		TT_None = 0
-	};
 protected:
 	std::time_t timeRate = 3;
-	std::string timerType = "";
 	int actionsCount = 0;
 	std::string filepath = "";
-	AbstractSystemTimer* timer = nullptr;
+	AbstractSystemTimer** timer = nullptr;
 };
 class TimerStateReader : public ITimerStateReader {
 public:
@@ -123,6 +131,6 @@ public:
 };
 class TimerTimeFileSaver : public TimerStateSaver {
 public:
-	TimerTimeFileSaver(AbstractSystemTimer* timer, std::string filepath);
+	TimerTimeFileSaver(AbstractSystemTimer* &timer, std::string filepath);
 	virtual void SaveTimer() override;
 };

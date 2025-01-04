@@ -78,7 +78,31 @@ bool VisualCommand::SetDistributor(ThreadDistributor* distributor) {
 
 bool TimerCommand::ExecuteCommand() {
 	std::smatch match;
-	if (std::regex_match(command, match, std::regex("timer +(\\d*):(\\d*):(\\d*)"))) {
+	if (std::regex_search(command, match, std::regex("timer +(\\d*):(\\d*):(\\d*)"))) {
+		//timer flags
+		std::smatch timerModeMatch;
+		if (std::regex_search(command, timerModeMatch, std::regex(" +/mode +(auto|manual) *"))) {
+			std::string mode = timerModeMatch[1].str();
+			ITimerAction* timerAction = (*this->timer)->GetTimerAction();
+			if (mode == "auto") {
+				if (*this->timer) {
+					delete *this->timer;
+					(*this->timer) = new YieldingSystemTimer();
+				}
+			}
+			else if (mode == "manual") {
+				if (*this->timer) {
+					delete *this->timer;
+					(*this->timer) = new SystemTimer();
+				}
+			}
+			(*this->timer)->SetTimerAction(timerAction);
+		}
+		int timerCounts = 1;
+		std::smatch yieldingTimerCountsMatch;
+		if (std::regex_search(command, yieldingTimerCountsMatch, std::regex(" +\\/c +(\\d+) *"))) {
+			timerCounts = atoi(yieldingTimerCountsMatch[1].str().c_str());
+		}
 		char seconds = atoi(match[1].str().c_str());
 		char minutes = atoi(match[2].str().c_str());
 		char hours = atoi(match[3].str().c_str());
@@ -89,14 +113,16 @@ bool TimerCommand::ExecuteCommand() {
 		time.tm_sec = seconds;
 		time.tm_min = minutes;
 		time.tm_hour = hours;
-		this->timer->SetTimerRate(time);
+		(*this->timer)->SetTimerRate(time);
+		if ((*this->timer)->GetType() == TypeToString(YieldingSystemTimer))
+			dynamic_cast<YieldingSystemTimer*>(*this->timer)->SetActionCounts(timerCounts);
 		//std::cout << time.tm_sec << time.tm_min << time.tm_hour << std::endl;
 		return true;
 	}
 	else if (std::regex_match(command, match, std::regex("timer +activate"))) {
 		time_t timerRateFuse = 3;
-		if (timer->GetTimerRate() < timerRateFuse) {
-			timer->SetTimerRate(timerRateFuse);
+		if ((*this->timer)->GetTimerRate() < timerRateFuse) {
+			(*this->timer)->SetTimerRate(timerRateFuse);
 		}
 		DynamicSettings::SetTimerActiveMode(true);
 		return true;
@@ -107,23 +133,24 @@ bool TimerCommand::ExecuteCommand() {
 	}
 	return false;
 }
-YieldingSystemTimer* TimerCommand::GetTimer() const{
-	return this->timer;
+AbstractSystemTimer* TimerCommand::GetTimer() const{
+	return (*this->timer);
 }
-void TimerCommand::SetTimer(YieldingSystemTimer* timer)
+void TimerCommand::SetTimer(AbstractSystemTimer* &timer)
 {
 	if (!this->timer) {
 		delete this->timer;
 	}
 	MakeSnapshotAnalyze timerAction;
-	this->timer = timer;
-	this->timer->SetTimerAction(&timerAction);
+	this->timer = &timer;
+	(*this->timer)->SetTimerAction(&timerAction);
 }
 TimerCommand::TimerCommand() {
 	if (!this->timer) {
-		this->timer = new YieldingSystemTimer();
+		this->timer = new AbstractSystemTimer*;
+		(*this->timer) = new YieldingSystemTimer();
 		MakeSnapshotAnalyze timerAction;
-		timer->SetTimerAction(&timerAction);
+		(*this->timer)->SetTimerAction(&timerAction);
 	}
 }
 TimerCommand::~TimerCommand() {
@@ -132,14 +159,14 @@ TimerCommand::~TimerCommand() {
 TimeFacadeSystem::TimeFacadeSystem()
 {
 }
-TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction* timerAction)
+TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* &timer, ITimerAction* timerAction)
 {
 	this->timerPath = timerPath;
-	this->timer = timer;
+	this->timer = &timer;
 	this->timerAction = timerAction;
 }
 
-TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* timer, ITimerAction* timerAction, ITimerAction* endingTimerAction) : TimeFacadeSystem(timerPath, timer, timerAction)
+TimeFacadeSystem::TimeFacadeSystem(std::string timerPath, AbstractSystemTimer* &timer, ITimerAction* timerAction, ITimerAction* endingTimerAction) : TimeFacadeSystem(timerPath, timer, timerAction)
 {
 	this->endingTimerAction = endingTimerAction;
 }
@@ -148,30 +175,36 @@ bool TimeFacadeSystem::Setup()
 {
 	bool returnValue = true;
 	timeReader = new TimerTimeFileReader(timerPath);
-	timeWriter = new TimerTimeFileSaver(timer, timerPath);
+	timeWriter = new TimerTimeFileSaver(*timer, timerPath);
 	AbstractSystemTimer* receivedSystemTimer = (timeReader->GetSystemTimer());
 	if (receivedSystemTimer != nullptr && timer != nullptr) {
 		time_t timeRate = receivedSystemTimer->GetTimerRate();
-		int actionCount = dynamic_cast<YieldingSystemTimer*>(receivedSystemTimer)->GetActionCounts();
+		if (receivedSystemTimer->GetType() == TypeToString(YieldingSystemTimer)) {
+			if (timer != nullptr) {
+				delete *timer;
+				*timer = new YieldingSystemTimer();
+			}
+			int actionCount = dynamic_cast<YieldingSystemTimer*>(receivedSystemTimer)->GetActionCounts();
+			dynamic_cast<YieldingSystemTimer*>(*this->timer)->SetActionCounts(actionCount);
+		}
+		(*this->timer)->SetTimerRate(timeRate);
 		delete receivedSystemTimer;
-		this->timer->SetTimerRate(timeRate);
-		dynamic_cast<YieldingSystemTimer*>(timer)->SetActionCounts(actionCount);
 	}
 	else {
 		returnValue = false;
 	}
 	if(timer)
-		this->timer->SetTimerAction(this->timerAction);
+		(*this->timer)->SetTimerAction(this->timerAction);
 	return returnValue;
 }
 
 void TimeFacadeSystem::UpdateSeconds()
 {
-	if (this->timer != nullptr) {
-		this->timer->DiscountOneSecondFromTimer();
-		if (this->timer->IsTimerCompleted()) {
+	if (*this->timer != nullptr) {
+		(*this->timer)->DiscountOneSecondFromTimer();
+		if ((*this->timer)->IsTimerCompleted()) {
 			DynamicSettings::SetTimerActiveMode(false);
-			timer->Continue();
+			(*this->timer)->Continue();
 			if (this->endingTimerAction != nullptr) {
 				endingTimerAction->Action();
 			}

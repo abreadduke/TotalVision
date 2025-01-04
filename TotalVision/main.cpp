@@ -50,7 +50,7 @@ int main() {
 	ConsoleReadCommand reader;
 	VisualCommand visc;
 	TimerCommand timerCommand;
-	YieldingSystemTimer* timer = new YieldingSystemTimer();
+	AbstractSystemTimer* timer = new SystemTimer();
 	timerCommand.SetTimer(timer);
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
