@@ -36,7 +36,6 @@ bool VisualCommand::ExecuteCommand()
 				ConsoleUI ui;
 				ui.SetOutputPrinter(printer);
 				ui.SetVisioner(visioner);
-				ui.MakeActionHandlerThread();
 				FinalAnalyzeProcedure finalAnalyzeProcedure;
 				MakeBinaryAnalyzedFile binaryMakerAction;
 				ThreadCloseProcedure threadCloseProcedure;
@@ -48,23 +47,15 @@ bool VisualCommand::ExecuteCommand()
 				ui.AddKeyBindAction('q', &threadCloseProcedure);
 				ui.AddKeyBindAction('x', &xlsMakerAction);
 				while (true) {
-					try {
-						visioner.makeSnapshot();
-					}
-					catch (std::runtime_error& error) {
-						std::cout << error.what() << std::endl;
-						if (!distributor->isExist()) {
-							distributor->ClearThread();
-							break;
-						}
+					if (!distributor->isExist()) {
+						distributor->ClearThread();
+						break;
 					}
 					ui.DrawUI();
-					visioner.closeProcs();
 					if (!distributor->isExist())
 						break;
 				}
 			});
-			//interfaceThread->detach();
 		}
 		return true;
 	}
@@ -116,7 +107,6 @@ bool TimerCommand::ExecuteCommand() {
 		(*this->timer)->SetTimerRate(time);
 		if ((*this->timer)->GetType() == TypeToString(YieldingSystemTimer))
 			dynamic_cast<YieldingSystemTimer*>(*this->timer)->SetActionCounts(timerCounts);
-		//std::cout << time.tm_sec << time.tm_min << time.tm_hour << std::endl;
 		return true;
 	}
 	else if (std::regex_match(command, match, std::regex("timer +activate"))) {

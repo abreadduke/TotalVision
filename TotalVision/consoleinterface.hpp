@@ -22,6 +22,8 @@
 #include "distribute.hpp"
 #define BYTENEXTDIS 1024
 #define TAB "    "
+#define complete_string_to_console(buffer)  buffer += std::string(10, ' ') + '\n'
+#define PRINTER_LIMIT 30
 
 //#define TABENABLE
 class ConsoleUI;
@@ -41,18 +43,23 @@ public:
 	ConsoleUI();
 	void SetOutputPrinter(const ProcessPrinter& printer);
 	void SetVisioner(ProcessVisioner& visioner);
-	void MakeActionHandlerThread();
 	void DrawUI();
 	const TimeAnalyzer* GetAnalyzer();
 	const ProcessVisioner* GetVisioner();
 	std::mutex timeAnalyzerMutex;
 	void AddKeyBindAction(const char key, IExecutableProcedure* action);
 	~ConsoleUI();
+protected:
+	void MakeActionHandlerThread();
+	void MakeProcessAnalyzingThread();
 private:
+	bool forceDraw = false;
 	bool running = true;
 	std::thread actionHandling;
+	std::thread processAnalyzingThread;
 	std::map<const char, IExecutableProcedure*> keyBindActions;
 	void ButtonActionsHandler();
+	void ProcessAnalyzing();
 	std::mutex cursormutex;
 	ProcessPrinter printer;
 	ProcessVisioner* visioner;

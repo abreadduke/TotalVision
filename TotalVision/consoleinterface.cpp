@@ -78,13 +78,18 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 			buffer += TAB;
 			#endif
 		//get system time for define cpu usage
-		buffer += std::to_string(pinfo.second.processCPUPersents) + "%\n";
+		//buffer += std::to_string(pinfo.second.processCPUPersents) + "%\n";
+		buffer += std::to_string(pinfo.second.processCPUPersents) + '%';
+		complete_string_to_console(buffer);
 		allcpu += pinfo.second.processCPUPersents;
 	}
-	if (staticinfo != nullptr)
+	if (staticinfo != nullptr) {
 		for (int i = 0; i < maxfilename; i++)
 			*staticinfo += '=';
-	*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu) + "%\n";
+		//*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu) + "%\n";
+		*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu);
+		complete_string_to_console((*staticinfo));
+	}
 	return buffer;
 }
 std::string ProcessPrinter::printHeaders(int memoryindent) {
@@ -100,10 +105,11 @@ std::string ProcessPrinter::printHeaders(int memoryindent) {
 			buffer += TAB;
 			#endif
 		#ifdef TABENABLE
-		buffer += "Memory\tCPU\n";
+		buffer += "Memory\tCPU";
 		#else
-		buffer += std::string("Memory") + TAB + "CPU\n";
+		buffer += std::string("Memory") + TAB + "CPU";
 		#endif
+		complete_string_to_console(buffer);
 	}
 	return buffer;
 }
@@ -114,6 +120,8 @@ ConsoleUI::ConsoleUI() {
 	thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	timeAnalyzer.SetBufferSize(50);
 	timeAnalyzer.SetSnapshotsCount(15);
+	MakeActionHandlerThread();
+	MakeProcessAnalyzingThread();
 }
 void ConsoleUI::SetOutputPrinter(const ProcessPrinter& printer) {
 	this->printer = printer;
@@ -124,18 +132,23 @@ void ConsoleUI::SetVisioner(ProcessVisioner& visioner) {
 void ConsoleUI::MakeActionHandlerThread() {
 	actionHandling = std::thread(&ConsoleUI::ButtonActionsHandler, this);
 }
+void ConsoleUI::MakeProcessAnalyzingThread()
+{
+	processAnalyzingThread = std::thread(&ConsoleUI::ProcessAnalyzing, this);
+}
 void ConsoleUI::DrawUI() {
-	timeAnalyzerMutex.lock();
-	//timeAnalyzer.ClearResults();
-	timeAnalyzer.Analyze(*visioner);
-	//timeAnalyzer.AnalyzeMidValues(*visioner, 10, 5);
-	timeAnalyzerMutex.unlock();
 	COORD cursorpos = { 0, 0 };
 	size_t nextlineaddress = 0;
-	int printerlimit = 30;
-	SetConsoleCursorPosition(thisconsole, cursorpos);
 	std::string staticinfo;
-	std::string printedinfo = printer.printProcess(timeAnalyzer, &staticinfo);
+	std::string printedinfo;
+	if (forceDraw) {
+		printedinfo = printer.printProcess(timeAnalyzer, &staticinfo);
+	}
+	else {
+		timeAnalyzerMutex.lock();
+		printedinfo = printer.printProcess(timeAnalyzer, &staticinfo);
+		timeAnalyzerMutex.unlock();
+	}
 	int scrolledpath = 0;
 	int printedlimitcounter = 0;
 	size_t eofdynamicpinfo = 0;
@@ -147,7 +160,7 @@ void ConsoleUI::DrawUI() {
 	for (size_t i = printedinfo.length(); i != 0; i--) {
 		if (printedinfo[i] == '\n') {
 			bottomcounter++;
-			if (bottomcounter == printerlimit) { bottomlimitedaddress = i; break; }
+			if (bottomcounter == PRINTER_LIMIT) { bottomlimitedaddress = i; break; }
 		}
 	}
 	for (size_t i = 0; i < printedinfo.length(); i++) {
@@ -162,15 +175,19 @@ void ConsoleUI::DrawUI() {
 	for (size_t i = nextlineaddress; i < printedinfo.length(); i++) {
 		if (printedinfo[i] == '\n')
 			printedlimitcounter++;
-		if (printedlimitcounter == printerlimit) { eofdynamicpinfo = i - nextlineaddress + 1; break; }
+		if (printedlimitcounter == PRINTER_LIMIT) { eofdynamicpinfo = i - nextlineaddress + 1; break; }
 	}
 	cursormutex.unlock();
 	nextlineaddress = nextlineaddress > 0 ? nextlineaddress : 0;
 	//write out to the console buffer
+	//DWORD d;
+	//CONSOLE_SCREEN_BUFFER_INFO consoleBuffer;
+	//GetConsoleScreenBufferInfo(thisconsole, &consoleBuffer);
+	//FillConsoleOutputCharacter(thisconsole, ' ', consoleBuffer.dwSize.X * consoleBuffer.dwSize.Y, cursorpos, &d);
+	SetConsoleCursorPosition(thisconsole, cursorpos);
 	WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress, eofdynamicpinfo * sizeof(char), NULL, NULL);
 	WriteConsoleA(thisconsole, staticinfo.c_str(), staticinfo.length() * sizeof(char), NULL, NULL);
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
-	//system("cls");
+	SetConsoleCursorPosition(thisconsole, cursorpos);
 }
 const TimeAnalyzer* ConsoleUI::GetAnalyzer()
 {
@@ -187,8 +204,14 @@ void ConsoleUI::AddKeyBindAction(const char key, IExecutableProcedure* action)
 ConsoleUI::~ConsoleUI()
 {
 	this->running = false;
+	CONSOLE_SCREEN_BUFFER_INFO consoleBuffer;
+	GetConsoleScreenBufferInfo(thisconsole, &consoleBuffer);
+	DWORD d;
+	FillConsoleOutputCharacterA(thisconsole, ' ', consoleBuffer.dwSize.X * PRINTER_LIMIT * 2, { 0, 0 }, &d);
 	if (this->actionHandling.joinable())
 		actionHandling.join();
+	if (this->processAnalyzingThread.joinable())
+		processAnalyzingThread.join();
 }
 void ConsoleUI::ButtonActionsHandler() {
 	while (running) {
@@ -198,11 +221,17 @@ void ConsoleUI::ButtonActionsHandler() {
 			cursormutex.lock();
 			printercursor++;
 			cursormutex.unlock();
+			forceDraw = true;
+			DrawUI();
+			forceDraw = false;
 			continue;
 		case 'w':
 			cursormutex.lock();
 			printercursor--;
 			cursormutex.unlock();
+			forceDraw = true;
+			DrawUI();
+			forceDraw = false;
 			continue;
 		default: {
 			auto actionPair = this->keyBindActions.find(sym);
@@ -213,43 +242,28 @@ void ConsoleUI::ButtonActionsHandler() {
 			break;
 		}
 		}
-		//case 'p': {
-		//	//StorageReader* reader = new BinaryReader();
-		//	//std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
-		//	//for (auto filepath : std::filesystem::directory_iterator(".")) {
-		//	//	std::string filename = filepath.path().string();
-		//	//	if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
-		//	//		auto parsedSnapshot = reader->ReadStorage(filename);
-		//	//		parsedSnapshots.push_back(parsedSnapshot);
-		//	//	}
-		//	//}
-		//	//delete reader;
-		//	//MidTimeAnalyzer midAnalyzer;
-		//	//DataStorage* ds = new XLSStorage();
-		//	//std::string filepath = "analitics.xlsx";
-		//	//midAnalyzer.Analyze(*visioner, parsedSnapshots);
-		//	//ds->SaveToFile(midAnalyzer, filepath);
-		//	//delete ds;
-		//	continue;
-		//}
-		//case 'q': {
-		//
-		//	continue;
-		//}
-		//case 'e':
-		//	//XLSStorage ds;
-		//
-		//	//DataStorage* ds = new BinaryStorage();
-		//	//std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		//	//std::tm* nowDate = std::localtime(&time);
-		//	////
-		//	//std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
-		//	//timeAnalyzerMutex.lock();
-		//	//ds->SaveToFile(timeAnalyzer, filepath);
-		//	//timeAnalyzerMutex.unlock();
-		//	//delete ds;
-		//	continue;
-		//}	
+	}
+}
+
+void ConsoleUI::ProcessAnalyzing()
+{
+	while (running) {
+		if (this->visioner) {
+			try {
+				visioner->makeSnapshot();
+				timeAnalyzerMutex.lock();
+				//timeAnalyzer.ClearResults();
+				timeAnalyzer.Analyze(*visioner);
+				//timeAnalyzer.AnalyzeMidValues(*visioner, 10, 5);
+				timeAnalyzerMutex.unlock();
+				
+			}
+			catch (std::runtime_error& error) {
+				std::cout << error.what() << std::endl;
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			visioner->closeProcs();
+		}
 	}
 }
 
