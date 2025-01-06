@@ -47,6 +47,7 @@ public:
 	const TimeAnalyzer* GetAnalyzer();
 	const ProcessVisioner* GetVisioner();
 	std::mutex timeAnalyzerMutex;
+	std::mutex consoleMutex;
 	void AddKeyBindAction(const char key, IExecutableProcedure* action);
 	~ConsoleUI();
 protected:

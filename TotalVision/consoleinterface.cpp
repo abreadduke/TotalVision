@@ -184,6 +184,7 @@ void ConsoleUI::DrawUI() {
 	//CONSOLE_SCREEN_BUFFER_INFO consoleBuffer;
 	//GetConsoleScreenBufferInfo(thisconsole, &consoleBuffer);
 	//FillConsoleOutputCharacter(thisconsole, ' ', consoleBuffer.dwSize.X * consoleBuffer.dwSize.Y, cursorpos, &d);
+	std::lock_guard<std::mutex> consoleLock(consoleMutex);
 	SetConsoleCursorPosition(thisconsole, cursorpos);
 	WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress, eofdynamicpinfo * sizeof(char), NULL, NULL);
 	WriteConsoleA(thisconsole, staticinfo.c_str(), staticinfo.length() * sizeof(char), NULL, NULL);
@@ -242,6 +243,8 @@ void ConsoleUI::ButtonActionsHandler() {
 			break;
 		}
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		std::this_thread::yield();
 	}
 }
 

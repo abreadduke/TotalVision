@@ -54,6 +54,8 @@ bool VisualCommand::ExecuteCommand()
 					ui.DrawUI();
 					if (!distributor->isExist())
 						break;
+					std::this_thread::sleep_for(std::chrono::milliseconds(20));
+					std::this_thread::yield();
 				}
 			});
 		}
