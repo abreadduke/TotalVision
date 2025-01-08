@@ -1,13 +1,13 @@
 //#define TEST
 
 #ifndef TEST
+#include "defined_paths.h"
 #include "commandhandler.hpp"
 #include <windows.h>
 #include <iostream>
 #include "visioner.hpp"
 #include "analyzer.hpp"
 #include "consoleinterface.hpp"
-#define TIMER_IO_FILE_PATH "./timer.timer"
 
 TimeFacadeSystem* timeFacadeSystem = nullptr;
 ThreadDistributor* ProgrammInterfaceThreadDistr = nullptr;
@@ -51,12 +51,18 @@ int main() {
 	ConsoleReadCommand reader;
 	VisualCommand visc;
 	TimerCommand timerCommand;
+	OpenSnapshotCommand openSnapshotCommand;
+	GetSnapshotListCommand getSnapshotListCommand;
+	ClearShanpshotsCommand clearSnapshotsCommand;
 	AbstractSystemTimer* timer = new SystemTimer();
 	timerCommand.SetTimer(timer);
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
 	reader.AddCommandHandler(&visc);
 	reader.AddCommandHandler(&timerCommand);
+	reader.AddCommandHandler(&openSnapshotCommand);
+	reader.AddCommandHandler(&getSnapshotListCommand);
+	reader.AddCommandHandler(&clearSnapshotsCommand);
 	//
 	//Setup TimeSystems
 	const std::string timerPath = TIMER_IO_FILE_PATH;

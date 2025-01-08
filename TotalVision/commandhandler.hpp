@@ -8,6 +8,8 @@
 #include "consoleinterface.hpp"
 #include <fstream>
 #include "dynamicsettings.hpp"
+#include <wchar.h>
+#include "defined_paths.h"
 
 class ICommand {
 public:
@@ -49,6 +51,23 @@ public:
 private:
 	AbstractSystemTimer** timer = nullptr;
 };
+class GetSnapshotListCommand : public Command {
+public:
+	GetSnapshotListCommand();
+	virtual bool ExecuteCommand() override;
+};
+class OpenSnapshotCommand : public Command {
+public:
+	OpenSnapshotCommand();
+	virtual bool ExecuteCommand() override;
+};
+class ClearShanpshotsCommand : public Command {
+public:
+	ClearShanpshotsCommand();
+	virtual bool ExecuteCommand() override;
+};
+template<class str>
+std::vector < std::string > GetAllSnapshotPathsInDirectory(str&& directory);
 class TimeFacadeSystem {
 public:
 	TimeFacadeSystem();

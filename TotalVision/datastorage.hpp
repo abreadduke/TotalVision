@@ -19,6 +19,7 @@ class XLSStorage : public DataStorage {
 public:
 	XLSStorage();
 	virtual void SaveToFile(TimeAnalyzer& timeanalyzer, const std::string& filepath) override;
+	virtual void SaveToFile(std::vector<TimeAnalyzer::AnalyzedProcess>, const std::string& filepath);
 };
 class BinaryStorage : public DataStorage {
 public:

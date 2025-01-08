@@ -159,6 +159,7 @@
     <ClInclude Include="commandhandler.hpp" />
     <ClInclude Include="consoleinterface.hpp" />
     <ClInclude Include="datastorage.hpp" />
+    <ClInclude Include="defined_paths.h" />
     <ClInclude Include="distribute.hpp" />
     <ClInclude Include="dynamicsettings.hpp" />
     <ClInclude Include="tests\timings_test.hpp" />

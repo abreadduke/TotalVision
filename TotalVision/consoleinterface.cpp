@@ -293,7 +293,7 @@ void FinalAnalyzeProcedure::AnalyzeProcedure(ProcessVisioner &visioner, const st
 	std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>> parsedSnapshots;
 	for (auto filepath : std::filesystem::directory_iterator(".")) {
 		std::string filename = filepath.path().string();
-		if (std::regex_match(filename, std::regex("\\.\\\\.+\\.psb$"))) {
+		if (std::regex_match(filename, std::regex("\\.\\\\.+\\" DEFAULT_SNAPSHOT_FORMAT "$"))) {
 			auto parsedSnapshot = reader->ReadStorage(filename);
 			parsedSnapshots.push_back(parsedSnapshot);
 		}
@@ -321,7 +321,7 @@ void MakeBinaryAnalyzedFile::Execute(ConsoleUI* consoleui) {
 	std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	std::tm* nowDate = std::localtime(&time);
 	//
-	std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + ".psb";
+	std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + DEFAULT_SNAPSHOT_FORMAT;
 	consoleui->timeAnalyzerMutex.lock();
 	SaveToFile((TimeAnalyzer&)*(consoleui->GetAnalyzer()), ds, filepath);
 	consoleui->timeAnalyzerMutex.unlock();

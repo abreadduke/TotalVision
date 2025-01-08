@@ -20,6 +20,7 @@
 #include <filesystem>
 #include <ctime>
 #include "distribute.hpp"
+#include "defined_paths.h"
 #define BYTENEXTDIS 1024
 #define TAB "    "
 #define complete_string_to_console(buffer)  buffer += std::string(10, ' ') + '\n'

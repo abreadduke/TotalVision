@@ -1,6 +1,6 @@
 #include "commandhandler.hpp"
 
-ConsoleReadCommand::ConsoleReadCommand() {}
+ConsoleReadCommand::ConsoleReadCommand() : Command() {}
 ConsoleReadCommand::ConsoleReadCommand(std::string command) {
 	SetCommand(command);
 }
@@ -21,7 +21,7 @@ void Command::SetCommand(std::string command) {
 Command::Command() {}
 bool Command::ExecuteCommand() { return true; }
 
-VisualCommand::VisualCommand()
+VisualCommand::VisualCommand() : Command()
 {
 }
 
@@ -137,7 +137,7 @@ void TimerCommand::SetTimer(AbstractSystemTimer* &timer)
 	this->timer = &timer;
 	(*this->timer)->SetTimerAction(&timerAction);
 }
-TimerCommand::TimerCommand() {
+TimerCommand::TimerCommand() : Command() {
 	if (!this->timer) {
 		this->timer = new AbstractSystemTimer*;
 		(*this->timer) = new YieldingSystemTimer();
@@ -213,3 +213,88 @@ TimeFacadeSystem::~TimeFacadeSystem()
 	timeWriter = nullptr;
 }
 
+OpenSnapshotCommand::OpenSnapshotCommand() : Command()
+{
+
+}
+
+bool OpenSnapshotCommand::ExecuteCommand()
+{
+	std::smatch match;
+	if (std::regex_match(command, match, std::regex("see +(.+?)(\\.\\w+|)\\s*$"))) {
+		std::string snapshotPath = match[1].str();
+		BinaryReader binaryReader;
+		XLSStorage XLSConverter;
+		std::string format = match[2].str();
+		if (format == "")
+			format = DEFAULT_SNAPSHOT_FORMAT;
+		XLSConverter.SaveToFile(binaryReader.ReadStorage(snapshotPath + format), snapshotPath + ".xls");
+	}
+	else {
+		return false;
+	}
+	return true;
+}
+
+GetSnapshotListCommand::GetSnapshotListCommand() : Command()
+{
+}
+
+bool GetSnapshotListCommand::ExecuteCommand()
+{
+	const char* keyword = "slist";
+	if (command.substr(0, sizeof(keyword)) == keyword) {
+		const wchar_t snapshotFormat[] = L"" DEFAULT_SNAPSHOT_FORMAT;
+		for (auto entry : std::filesystem::directory_iterator(".")) {
+			const wchar_t *path = entry.path().c_str();
+			wchar_t fileFormat[sizeof(snapshotFormat)];
+			if (lstrlen(path) >= lstrlen(snapshotFormat) && std::filesystem::is_regular_file(path)){
+				lstrcpyW(fileFormat, (wchar_t*)path + lstrlen(path) - lstrlen(snapshotFormat));
+				if (lstrcmp(fileFormat, snapshotFormat) == 0) {
+					std::wprintf(path);
+					std::cout << std::endl;
+				}
+			}
+			//std::string filepath = entry.path().string();
+		}
+	}
+	else {
+		return false;
+	}
+	return true;
+}
+
+ClearShanpshotsCommand::ClearShanpshotsCommand() : Command()
+{
+}
+
+bool ClearShanpshotsCommand::ExecuteCommand()
+{
+	const char* keyword = "sclr";
+	if (command.substr(0, sizeof(keyword)) == keyword) {
+		auto snapshots = GetAllSnapshotPathsInDirectory(".");
+		for (auto snapshot : snapshots) {
+			std::filesystem::remove(std::filesystem::path(snapshot));
+		}
+	}
+	return true;
+}
+template<class str>
+std::vector<std::string> GetAllSnapshotPathsInDirectory(str&& directory)
+{
+	std::vector<std::string> retn;
+	const wchar_t snapshotFormat[] = L"" DEFAULT_SNAPSHOT_FORMAT;
+	for (auto entry : std::filesystem::directory_iterator(directory)) {
+		const wchar_t* path = entry.path().c_str();
+		wchar_t fileFormat[sizeof(snapshotFormat)];
+		if (lstrlen(path) >= lstrlen(snapshotFormat) && std::filesystem::is_regular_file(path)) {
+			lstrcpyW(fileFormat, (wchar_t*)path + lstrlen(path) - lstrlen(snapshotFormat));
+			if (lstrcmp(fileFormat, snapshotFormat) == 0) {
+				std::wstring wstr(path);
+				std::string cast_str(wstr.begin(), wstr.end());
+				retn.push_back(cast_str);
+			}
+		}
+	}
+	return retn;
+}
