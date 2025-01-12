@@ -54,6 +54,7 @@ int main() {
 	OpenSnapshotCommand openSnapshotCommand;
 	GetSnapshotListCommand getSnapshotListCommand;
 	ClearShanpshotsCommand clearSnapshotsCommand;
+	HelpCommand helpCommand;
 	AbstractSystemTimer* timer = new SystemTimer();
 	timerCommand.SetTimer(timer);
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
@@ -63,6 +64,7 @@ int main() {
 	reader.AddCommandHandler(&openSnapshotCommand);
 	reader.AddCommandHandler(&getSnapshotListCommand);
 	reader.AddCommandHandler(&clearSnapshotsCommand);
+	reader.AddCommandHandler(&helpCommand);
 	//
 	//Setup TimeSystems
 	const std::string timerPath = TIMER_IO_FILE_PATH;

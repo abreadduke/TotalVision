@@ -276,8 +276,9 @@ bool ClearShanpshotsCommand::ExecuteCommand()
 		for (auto snapshot : snapshots) {
 			std::filesystem::remove(std::filesystem::path(snapshot));
 		}
+		return true;
 	}
-	return true;
+	return false;
 }
 template<class str>
 std::vector<std::string> GetAllSnapshotPathsInDirectory(str&& directory)
@@ -297,4 +298,22 @@ std::vector<std::string> GetAllSnapshotPathsInDirectory(str&& directory)
 		}
 	}
 	return retn;
+}
+
+HelpCommand::HelpCommand() : Command()
+{
+}
+
+bool HelpCommand::ExecuteCommand()
+{
+	const char* keyword = "help";
+	if (command.substr(0, sizeof(keyword)) == keyword) {
+		const int bufferSize = 1024 * 3;
+		char* buffer = new char[bufferSize];
+		LoadStringA(nullptr, HELP_MESSAGE, buffer, bufferSize);
+		std::cout << buffer << std::endl;
+		delete buffer;
+		return true;
+	}
+	return false;
 }

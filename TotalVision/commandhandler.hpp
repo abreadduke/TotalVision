@@ -10,6 +10,8 @@
 #include "dynamicsettings.hpp"
 #include <wchar.h>
 #include "defined_paths.h"
+#include <windows.h>
+#include "resource.h"
 
 class ICommand {
 public:
@@ -64,6 +66,11 @@ public:
 class ClearShanpshotsCommand : public Command {
 public:
 	ClearShanpshotsCommand();
+	virtual bool ExecuteCommand() override;
+};
+class HelpCommand : public Command {
+public:
+	HelpCommand();
 	virtual bool ExecuteCommand() override;
 };
 template<class str>
