@@ -1,10 +1,11 @@
 //{{NO_DEPENDENCIES}}
-// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ Microsoft Visual C++.
-// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ TotalVision.rc
+// Включаемый файл, созданный в Microsoft Visual C++.
+// Используется TotalVision.rc
 //
 #define IDS_STRING101                   101
 #define HELP_MESSAGE                    101
-#define PROGRAMM_ICON                       104
+#define PROCESS_KILL_MESSAGE            102
+#define PROGRAMM_ICON                   104
 
 // Next default values for new objects
 // 

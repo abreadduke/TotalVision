@@ -19,6 +19,9 @@
     <Filter Include="Исходные файлы\tests">
       <UniqueIdentifier>{19a8df34-bb7c-4ca7-b6a7-62afad10bdee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Исходные файлы\utils">
+      <UniqueIdentifier>{de0095a1-7e38-48dc-ad4b-1f654052cf7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -50,6 +53,9 @@
     </ClCompile>
     <ClCompile Include="dynamicsettings.cpp">
       <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\path.cpp">
+      <Filter>Исходные файлы\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +92,9 @@
     <ClInclude Include="resource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="utils\path.hpp">
+      <Filter>Исходные файлы\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TotalVision.rc">
@@ -93,7 +102,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="icon1.ico">
+    <Image Include="icon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
   </ItemGroup>

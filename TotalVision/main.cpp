@@ -26,6 +26,7 @@ BOOL WINAPI ConsoleSignalReceiver(_In_ DWORD dwCtrlType) {
 int main() {
 	setlocale(LC_ALL, "ru");
 	SetConsoleOutputCP(1251);
+	SetConsoleCP(1251);
 	//ProcessVisioner visioner;
 	//ProcessPrinter printer;
 	//ConsoleUI ui;

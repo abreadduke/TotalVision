@@ -152,6 +152,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tests\timings_test.cpp" />
     <ClCompile Include="timings.cpp" />
+    <ClCompile Include="utils\path.cpp" />
     <ClCompile Include="visioner.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -165,13 +166,14 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="tests\timings_test.hpp" />
     <ClInclude Include="timings.hpp" />
+    <ClInclude Include="utils\path.hpp" />
     <ClInclude Include="visioner.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TotalVision.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="icon1.ico" />
+    <Image Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

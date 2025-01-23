@@ -95,11 +95,7 @@ void TimeAnalyzer::Analyze(ProcessVisioner &visioner){
 			double parcedtimes = 0;
 			if (allprocstimes != 0)
 				parcedtimes = ((double)processtimes / (double)(allprocstimes + cpuidle * 100)) * 100;
-			std::string rfilename = "";
-			for (int diskname = 3; diskname < sizeof(disks) / sizeof(char); diskname++) {
-				rfilename = std::regex_replace(filename, std::regex(std::string("\\\\Device\\\\HarddiskVolume") + std::to_string(diskname)), disks[diskname - 3] + std::string(":"));
-				if (rfilename != "") break;
-			}
+			std::string rfilename = RawPathToPolished(std::string(filename));
 			TimeAnalyzer::AnalyzedProcess analyzedprocess = {
 				rfilename, processmemory, parcedtimes
 			};

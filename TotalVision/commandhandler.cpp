@@ -40,12 +40,14 @@ bool VisualCommand::ExecuteCommand()
 				MakeBinaryAnalyzedFile binaryMakerAction;
 				ThreadCloseProcedure threadCloseProcedure;
 				MakeXLSAnalyzedFile xlsMakerAction;
+				KillProcessProcedure kpp;
 				threadCloseProcedure.SetThreadDistrubutor(distributor);
 				//key actions
 				ui.AddKeyBindAction('p', &finalAnalyzeProcedure);
 				ui.AddKeyBindAction('e', &binaryMakerAction);
 				ui.AddKeyBindAction('q', &threadCloseProcedure);
 				ui.AddKeyBindAction('x', &xlsMakerAction);
+				ui.AddKeyBindAction('k', &kpp);
 				while (true) {
 					if (!distributor->isExist()) {
 						distributor->ClearThread();

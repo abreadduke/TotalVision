@@ -21,12 +21,20 @@
 #include <ctime>
 #include "distribute.hpp"
 #include "defined_paths.h"
+#include "utils/path.hpp"
+#include "resource.h"
 #define BYTENEXTDIS 1024
+#ifdef TABENABLE
+#define TAB '\t'
+#else
 #define TAB "    "
+#endif 
 #define complete_string_to_console(buffer)  buffer += std::string(10, ' ') + '\n'
 #define PRINTER_LIMIT 30
 
 //#define TABENABLE
+typedef unsigned char digits;
+digits getDigitsFromNumber(unsigned int number);
 class ConsoleUI;
 class IExecutableProcedure;
 class ProcessPrinter {
@@ -45,8 +53,11 @@ public:
 	void SetOutputPrinter(const ProcessPrinter& printer);
 	void SetVisioner(ProcessVisioner& visioner);
 	void DrawUI();
-	const TimeAnalyzer* GetAnalyzer();
-	const ProcessVisioner* GetVisioner();
+	void LockDrawing();
+	void UnlockDrawing();
+	void ClearConsoleBuffer();
+	const TimeAnalyzer* GetAnalyzer() const;
+	ProcessVisioner* GetVisioner() const;
 	std::mutex timeAnalyzerMutex;
 	std::mutex consoleMutex;
 	void AddKeyBindAction(const char key, IExecutableProcedure* action);
@@ -55,6 +66,7 @@ protected:
 	void MakeActionHandlerThread();
 	void MakeProcessAnalyzingThread();
 private:
+	bool canDraw = true;
 	bool forceDraw = false;
 	bool running = true;
 	std::thread actionHandling;
@@ -95,6 +107,11 @@ public:
 	virtual void SaveToFile(TimeAnalyzer& timeAnalyzer, DataStorage* dataStorage, std::string filename);
 protected:
 	std::string filename;
+};
+class KillProcessProcedure : public IExecutableProcedure {
+public:
+	KillProcessProcedure();
+	virtual void Execute(ConsoleUI* consoleui) override;
 };
 class MakeBinaryAnalyzedFile : public MakeAnalyzedFile {
 public:

@@ -11,6 +11,7 @@
 #include <queue>
 #include <map>
 #include "visioner.hpp"
+#include "utils/path.hpp"
 
 class ProcessAnalyzer {
 public:
