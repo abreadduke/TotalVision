@@ -6,7 +6,7 @@ std::vector<HANDLE> getAllProcs(DWORD openFlags) {
 	HANDLE CONST hSnapshot = CreateToolhelp32Snapshot(
 		TH32CS_SNAPPROCESS | TH32CS_SNAPALL, 0);
 	if (INVALID_HANDLE_VALUE == hSnapshot) {
-		throw std::runtime_error("Невозможно сделать снапшот процессов");
+		throw std::runtime_error("Unable to take a snapshot of processes");
 	}
 	peProcessEntry.dwSize = sizeof(PROCESSENTRY32);
 	Process32First(hSnapshot, &peProcessEntry);
@@ -14,13 +14,6 @@ std::vector<HANDLE> getAllProcs(DWORD openFlags) {
 		procs.push_back(OpenProcess(PROCESS_QUERY_INFORMATION | openFlags, true, peProcessEntry.th32ProcessID));
 	} while (Process32Next(hSnapshot, &peProcessEntry));
 	CloseHandle(hSnapshot);
-	//DWORD* procsids = new DWORD[1024];
-	//DWORD procssize;
-	//EnumProcesses(procsids, 1024, &procssize);
-	//for (int i = 0; i < procssize; i++) {
-	//	procs.push_back(OpenProcess(PROCESS_QUERY_INFORMATION, true, procsids[i]));
-	//}
-	//delete[] procsids;
 	return procs;
 }
 ProcessVisioner::ProcessVisioner() {}

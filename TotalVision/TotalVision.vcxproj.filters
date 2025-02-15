@@ -95,6 +95,9 @@
     <ClInclude Include="utils\path.hpp">
       <Filter>Исходные файлы\utils</Filter>
     </ClInclude>
+    <ClInclude Include="compilation_settings.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TotalVision.rc">

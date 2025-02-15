@@ -89,12 +89,15 @@ int main() {
 		}
 	});
 	while (true) {
+		const int unknown_command_buffer = 150;
+		char unknown_command_message[unknown_command_buffer];
+		LoadStringA(nullptr, UNKNOWN_COMMAND_MESSAGE, unknown_command_message, unknown_command_buffer);
 		std::string command;
 		if (ProgrammInterfaceThreadDistr->GetThread() == nullptr) {
 			std::getline(std::cin, command);
 			reader.SetCommand(command);
 			if (!reader.ExecuteCommand()) {
-				std::cout << "Неизвестная команда " << command << std::endl;
+				std::cout << unknown_command_message << command << std::endl;
 			}
 		}
 	}

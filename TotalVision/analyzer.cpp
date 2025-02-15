@@ -81,7 +81,6 @@ void TimeAnalyzer::Analyze(ProcessVisioner &visioner){
 	}
 	for (HANDLE process : procs) {
 		char filename[1024];
-		char disks[] = { 'C', 'D', 'E', 'F' };
 		if (GetProcessImageFileNameA(process, filename, sizeof(filename))) {
 			DWORD processid = GetProcessId(process);
 			auto itertimes = times.find(processid);
@@ -99,7 +98,6 @@ void TimeAnalyzer::Analyze(ProcessVisioner &visioner){
 			TimeAnalyzer::AnalyzedProcess analyzedprocess = {
 				rfilename, processmemory, parcedtimes
 			};
-			//this->analyzedProcs.push_back(analyzedprocess);
 			this->analyzedProcs[processid] = analyzedprocess;
 		}
 	}

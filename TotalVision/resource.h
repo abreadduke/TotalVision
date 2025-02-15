@@ -2,10 +2,10 @@
 // Включаемый файл, созданный в Microsoft Visual C++.
 // Используется TotalVision.rc
 //
-#define IDS_STRING101                   101
 #define HELP_MESSAGE                    101
 #define PROCESS_KILL_MESSAGE            102
-#define PROGRAMM_ICON                   104
+#define PROGRAMM_ICON                   103
+#define UNKNOWN_COMMAND_MESSAGE			104
 
 // Next default values for new objects
 // 

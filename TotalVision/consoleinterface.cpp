@@ -376,7 +376,7 @@ void KillProcessProcedure::Execute(ConsoleUI* consoleui)
 	consoleui->ClearConsoleBuffer();
 	consoleui->LockDrawing();
 	const int bufferSize = 150;
-	char* killMessage = new char[bufferSize];
+	char killMessage[bufferSize];
 	LoadStringA(nullptr, PROCESS_KILL_MESSAGE, killMessage, bufferSize);
 	std::cout << killMessage;
 	std::string rawProcessPath;
