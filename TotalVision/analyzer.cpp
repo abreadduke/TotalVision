@@ -145,7 +145,7 @@ void MidTimeAnalyzer::Analyze(ProcessVisioner& visioner, std::vector<std::vector
 void MidTimeAnalyzer::AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::queue<std::map<DWORD, AnalyzedProcess>>& buffer) {
 	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> recombinatedAnalyzedProcs;
 	hiddenAnalyzer.ClearResults();
-	std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(analyzerOffset));
 	hiddenAnalyzer.Analyze(visioner);
 	for (auto ap : hiddenAnalyzer.GetAnalyzed()) {
 		bool hasNotNewAp = false;
@@ -177,26 +177,33 @@ void MidTimeAnalyzer::AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::que
 	analyzedProcs = recombinatedAnalyzedProcs;
 }
 void MidTimeAnalyzer::AnalyzeWithGivenBuffer(ProcessVisioner& visioner, std::vector<std::vector<TimeAnalyzer::AnalyzedProcess>>& buffer) {
-	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> combinedProcs;
-	std::map<DWORD, int> countProcessesInBuffer;
-	std::hash<std::string> stringHash;
-	for (int snapshotIndex = 0; snapshotIndex < buffer.size(); snapshotIndex++) {
-		for (auto process : buffer[snapshotIndex]) {
-			DWORD hashcode = stringHash(process.processName);
-			if (combinedProcs.find(hashcode) == combinedProcs.end()) {
-				combinedProcs[hashcode] = process;
-				countProcessesInBuffer[hashcode] = 0;
-			}
-			else {
-				combinedProcs[hashcode].processMemoryUsage += process.processMemoryUsage;
-				combinedProcs[hashcode].processCPUPersents += process.processCPUPersents;
-			}
-			countProcessesInBuffer[hashcode]++;
-		}
-	}
-	for (auto processInfoForMidiation : combinedProcs) {
-		combinedProcs[processInfoForMidiation.first].processMemoryUsage /= countProcessesInBuffer[processInfoForMidiation.first];
-		combinedProcs[processInfoForMidiation.first].processCPUPersents /= countProcessesInBuffer[processInfoForMidiation.first];
-	}
-	analyzedProcs = combinedProcs;
+	auto interfaceBuilder = AnalyzerProcessInterfaceBuilder<TimeAnalyzer::AnalyzedProcess>();
+	analyzedProcs = MediateProcesses<TimeAnalyzer::AnalyzedProcess>(buffer, &interfaceBuilder);
 }
+
+TimeProcessInterfaceBuilder::TimeProcessInterfaceBuilder()
+{
+}
+void TimeProcessInterfaceBuilder::SetTimerRate(time_t rate) {
+	this->rate = rate;
+}
+void TimeProcessInterfaceBuilder::Build(std::map<DWORD, TimeAnalyzedProcess>& procs, const DWORD& processId, std::map<DWORD, int>& fixedCounts){
+	AnalyzerProcessInterfaceBuilder::Build(procs, processId, fixedCounts);
+	procs[processId].time += rate * fixedCounts[processId];
+}
+
+TimeAnalyzedProcess::TimeAnalyzedProcess()
+{
+}
+
+TimeAnalyzedProcess::TimeAnalyzedProcess(const TimeAnalyzer::AnalyzedProcess& ap)
+{
+	this->processCPUPersents = ap.processCPUPersents;
+	this->processMemoryUsage = ap.processMemoryUsage;
+	this->processName = ap.processName;
+}
+
+//TimeAnalyzerAdapter::TimeAnalyzerAdapter(std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedProcs) : TimeAnalyzer()
+//{
+//	this->analyzedProcs = analyzedProcs;
+//}

@@ -12,6 +12,8 @@
 #include <map>
 #include "visioner.hpp"
 #include "utils/path.hpp"
+#include <filesystem>
+#include "defined_paths.h"
 
 class ProcessAnalyzer {
 public:
@@ -54,6 +56,64 @@ private:
 protected:
 	std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedProcs;
 };
+//class TimeAnalyzerAdapter : TimeAnalyzer {
+//public:
+//	TimeAnalyzerAdapter(std::map<DWORD, TimeAnalyzer::AnalyzedProcess> analyzedProcs);
+//};
+struct TimeAnalyzedProcess : TimeAnalyzer::AnalyzedProcess {
+	TimeAnalyzedProcess();
+	TimeAnalyzedProcess(const TimeAnalyzer::AnalyzedProcess& ap);
+	time_t time = 0;
+};
+template<class AnalyzedFormat>
+class ProcessInterfaceBuilder {
+public:
+	virtual void Build(std::map<DWORD, AnalyzedFormat>& procs, const DWORD& processId, std::map<DWORD, int>& fixedCounts) = 0;
+};
+template<class AnalyzedFormat>
+class AnalyzerProcessInterfaceBuilder : public ProcessInterfaceBuilder<AnalyzedFormat>{
+public:
+	AnalyzerProcessInterfaceBuilder(){}
+	virtual void Build(std::map<DWORD, AnalyzedFormat>& procs, const DWORD& processId, std::map<DWORD, int>& fixedCounts) override {
+		procs[processId].processMemoryUsage /= fixedCounts[processId];
+		procs[processId].processCPUPersents /= fixedCounts[processId];
+	}
+};
+class TimeProcessInterfaceBuilder : public AnalyzerProcessInterfaceBuilder<TimeAnalyzedProcess> {
+public:
+	TimeProcessInterfaceBuilder();
+	virtual void SetTimerRate(time_t rate);
+	virtual void Build(std::map<DWORD, TimeAnalyzedProcess>& procs, const DWORD& processId, std::map<DWORD, int>& fixedCounts) override;
+private:
+	time_t rate = 0;
+};
+template<class AnalyzedFormat>
+std::map<DWORD, AnalyzedFormat> MediateProcesses(std::vector<std::vector<AnalyzedFormat>>& buffer, ProcessInterfaceBuilder<AnalyzedFormat>* ib) {
+	std::map<DWORD, AnalyzedFormat> combinedProcs;
+	std::map<DWORD, int> countProcessesInBuffer;
+	std::hash<std::string> stringHash;
+	for (int snapshotIndex = 0; snapshotIndex < buffer.size(); snapshotIndex++) {
+		for (auto process : buffer[snapshotIndex]) {
+			DWORD hashcode = stringHash(process.processName);
+			if (combinedProcs.find(hashcode) == combinedProcs.end()) {
+				combinedProcs[hashcode] = process;
+				countProcessesInBuffer[hashcode] = 0;
+			}
+			else {
+				combinedProcs[hashcode].processMemoryUsage += process.processMemoryUsage;
+				combinedProcs[hashcode].processCPUPersents += process.processCPUPersents;
+			}
+			countProcessesInBuffer[hashcode]++;
+		}
+	}
+	for (auto processInfoForMidiation : combinedProcs) {
+		//----
+		//processInfoForMidiation.second.processMemoryUsage /= countProcessesInBuffer[processInfoForMidiation.first];
+		//processInfoForMidiation.second.processCPUPersents /= countProcessesInBuffer[processInfoForMidiation.first];
+		ib->Build(combinedProcs, processInfoForMidiation.first, countProcessesInBuffer);
+	}
+	return combinedProcs;
+}
 class MidTimeAnalyzer : public TimeAnalyzer {
 public:
 	MidTimeAnalyzer();

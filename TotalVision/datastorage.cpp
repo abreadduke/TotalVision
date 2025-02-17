@@ -61,25 +61,81 @@ void XLSStorage::SaveToFile(std::vector<TimeAnalyzer::AnalyzedProcess> analyzedP
 	Workbook workbook(FileFormatType::Xlsx);
 	Worksheet sheet = workbook.GetWorksheets().Get(0);
 	Cells cells = sheet.GetCells();
-	cells.Get(0, 0).PutValue(u"Процесс");
-	cells.Get(0, 1).PutValue(u"Использование памяти");
-	cells.Get(0, 2).PutValue(u"Использование процессора");
-	cells.SetColumnWidth(0, 150);
-	cells.SetColumnWidth(1, 30);
+	cells.Get(0, 0).PutValue(u"ID");
+	cells.Get(0, 1).PutValue(u"Процесс");
+	cells.Get(0, 2).PutValue(u"Использование памяти");
+	cells.Get(0, 3).PutValue(u"Использование процессора");
+	cells.SetColumnWidth(1, 150);
 	cells.SetColumnWidth(2, 30);
+	cells.SetColumnWidth(3, 30);
 	int cellid = 1;
-	for (auto analyzedprocess : analyzedProcs) {
+	for (auto analyzedProcess : analyzedProcs) {
 		//LPSTR wProcessName = NULL;
 		//CharToOemA(analyzedprocess.processName.c_str(), wProcessName);
-		cells.Get(cellid, 0).PutValue(Aspose::Cells::U16String(analyzedprocess.processName.c_str()));
-		cells.Get(cellid, 1).PutValue((int32_t)analyzedprocess.processMemoryUsage);
-		cells.Get(cellid++, 2).PutValue((double)analyzedprocess.processCPUPersents);
+		cells.Get(cellid, 0).PutValue(cellid);
+		cells.Get(cellid, 1).PutValue(Aspose::Cells::U16String(analyzedProcess.processName.c_str()));
+		cells.Get(cellid, 2).PutValue((int32_t)analyzedProcess.processMemoryUsage);
+		cells.Get(cellid++, 3).PutValue((double)analyzedProcess.processCPUPersents);
 	}
 
 	int chartIndex = sheet.GetCharts().Add(ChartType::Column, 9, 9, 50, 60);
 	Chart chart = sheet.GetCharts().Get(chartIndex);
 	int processesLength = analyzedProcs.size();
-	chart.GetNSeries().Add(Aspose::Cells::U16String((std::string("C2:C") + std::to_string(processesLength)).c_str()), true);
+	chart.GetNSeries().Add(Aspose::Cells::U16String((std::string("D2:D") + std::to_string(processesLength)).c_str()), true);
+	chart.GetNSeries().SetCategoryData(Aspose::Cells::U16String((std::string("A2:A") + std::to_string(processesLength)).c_str()));
+	//Series aSeries = chart.GetNSeries().Get(0);
+	//aSeries.SetName(u"=B1");
+	chart.SetShowLegend(true);
+	chart.GetTitle().SetText(u"Использование cpu");
+	workbook.Save(Aspose::Cells::U16String(filepath.c_str()));
+	Aspose::Cells::Cleanup();
+}
+void XLSStorage::SaveToFile(std::map<DWORD, TimeAnalyzedProcess> analyzedprocesses, const std::string& filepath) {
+	Aspose::Cells::Startup();
+
+	Workbook workbook(FileFormatType::Xlsx);
+	workbook.GetSettings().SetDate1904(true);
+	Worksheet sheet = workbook.GetWorksheets().Get(0);
+	Cells cells = sheet.GetCells();
+	cells.Get(0, 0).PutValue(u"ID");
+	cells.Get(0, 1).PutValue(u"Процесс");
+	cells.Get(0, 2).PutValue(u"Использование памяти");
+	cells.Get(0, 3).PutValue(u"Использование процессора");
+	cells.Get(0, 4).PutValue(u"Общее время активности");
+	cells.SetColumnWidth(1, 150);
+	cells.SetColumnWidth(2, 30);
+	cells.SetColumnWidth(3, 30);
+	cells.SetColumnWidth(4, 30);
+	int cellid = 1;
+	for (auto analyzedprocess : analyzedprocesses) {
+		//LPSTR wProcessName = NULL;
+		//CharToOemA(analyzedprocess.processName.c_str(), wProcessName);
+		cells.Get(cellid, 0).PutValue(cellid);
+		cells.Get(cellid, 1).PutValue(Aspose::Cells::U16String(analyzedprocess.second.processName.c_str()));
+		cells.Get(cellid, 2).PutValue((int32_t)analyzedprocess.second.processMemoryUsage);
+		cells.Get(cellid, 3).PutValue((double)analyzedprocess.second.processCPUPersents);
+		Date activeTime = {0};
+		Cell dateCell = cells.Get(cellid, 4);
+		Style dateStyle = dateCell.GetStyle();
+		dateStyle.SetCustom("hh:mm:ss");
+		dateStyle.SetHorizontalAlignment(TextAlignmentType::Center);
+		dateCell.SetStyle(dateStyle);
+		dateStyle.Update();
+		if (dateStyle.IsDateTime()) {
+			activeTime.second = analyzedprocess.second.time % 60;
+			activeTime.minute = ((analyzedprocess.second.time - activeTime.second) % (60 * 60)) / 60;
+			activeTime.hour = (analyzedprocess.second.time - activeTime.minute * 60 - activeTime.second) * 60 * 60;
+			dateCell.PutValue(U16String((std::to_string(activeTime.hour) + ":" +
+										 std::to_string(activeTime.minute) + ":" +
+										 std::to_string(activeTime.second)).c_str()));
+		}
+		cellid++;
+	}
+
+	int chartIndex = sheet.GetCharts().Add(ChartType::Column, 9, 9, 50, 60);
+	Chart chart = sheet.GetCharts().Get(chartIndex);
+	int processesLength = analyzedprocesses.size();
+	chart.GetNSeries().Add(Aspose::Cells::U16String((std::string("D2:D") + std::to_string(processesLength)).c_str()), true);
 	chart.GetNSeries().SetCategoryData(Aspose::Cells::U16String((std::string("A2:A") + std::to_string(processesLength)).c_str()));
 	//Series aSeries = chart.GetNSeries().Get(0);
 	//aSeries.SetName(u"=B1");

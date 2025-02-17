@@ -31,6 +31,8 @@ bool VisualCommand::ExecuteCommand()
 		std::thread* interfaceThread = nullptr;
 		if (this->distributor != nullptr && this->distributor->GetNewThread(interfaceThread)) {
 			*interfaceThread = std::thread([this]() {
+				if (distributor->lockOtherThreads)
+					distributor->lockOtherThreads->lock();
 				ProcessVisioner visioner;
 				ProcessPrinter printer;
 				ConsoleUI ui;
@@ -49,15 +51,13 @@ bool VisualCommand::ExecuteCommand()
 				ui.AddKeyBindAction('x', &xlsMakerAction);
 				ui.AddKeyBindAction('k', &kpp);
 				while (true) {
+					ui.DrawUI();
 					if (!distributor->isExist()) {
-						distributor->ClearThread();
+						if (distributor->lockOtherThreads)
+							distributor->lockOtherThreads->unlock();
 						break;
 					}
-					ui.DrawUI();
-					if (!distributor->isExist())
-						break;
 					std::this_thread::sleep_for(std::chrono::milliseconds(20));
-					std::this_thread::yield();
 				}
 			});
 		}
@@ -103,7 +103,7 @@ bool TimerCommand::ExecuteCommand() {
 		char hours = atoi(match[3].str().c_str());
 		seconds = 59 < seconds ?  59 : (0 > seconds ? 0 : seconds);
 		minutes = 59 < minutes ? 59 : (0 > minutes ? 0 : minutes);
-		hours = 23 < hours ? 23 : (0 > hours ? 0 : hours);
+		//hours = 23 < hours ? 23 : (0 > hours ? 0 : hours);
 		tm time;
 		time.tm_sec = seconds;
 		time.tm_min = minutes;

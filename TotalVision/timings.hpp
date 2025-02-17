@@ -28,12 +28,6 @@ protected:
 	ProcessVisioner* visioner = nullptr;
 	TimeAnalyzer* timeAnalyzer = nullptr;
 };
-class MakeXLSAnalyze : public MakeSnapshotAnalyze {
-public:
-	MakeXLSAnalyze();
-	MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, const std::string& directory);
-	virtual void Action() override;
-};
 class ITimerType {
 public:
 	inline virtual const std::string GetType() const = 0;
@@ -57,6 +51,13 @@ public:
 	virtual void UseReader(TimerStateReader* reader) = 0;
 	virtual void Continue() = 0;
 	virtual time_t GetTimerRate() = 0;
+};
+class MakeXLSAnalyze : public MakeSnapshotAnalyze {
+public:
+	MakeXLSAnalyze();
+	MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, AbstractSystemTimer*& timer, const std::string& directory);
+	virtual void Action() override;
+	AbstractSystemTimer **timer;
 };
 class SystemTimer : public AbstractSystemTimer {
 public:

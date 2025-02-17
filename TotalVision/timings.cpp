@@ -145,14 +145,14 @@ int YieldingSystemTimer::GetActionCounts() const
 }
 void YieldingSystemTimer::DiscountOneSecondFromTimer()
 {
-	if (actionCounts && timer > 0 && timeRate > 0) {
+	if (actionCounts && timeRate > 0) {
 		this->timer--;
-		if ((float)1 - (float)timer / (float)timeRate >= (float)(actionsCompleted + 1) / (float)actionCounts) {
+		if ((float)1 - (float)timer / (float)timeRate >= (float)(actionsCompleted) / (float)actionCounts) {
 			ActivateTimerAction();
 			actionsCompleted++;
 		}
 	}
-	else if(timer <= 0){
+	if(actionsCompleted == actionCounts){
 		timerCompleted = true;
 		this->timer = this->timeRate;
 		this->actionsCompleted = 0;
@@ -241,17 +241,41 @@ MakeXLSAnalyze::MakeXLSAnalyze()
 	
 }
 
-MakeXLSAnalyze::MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, const std::string& directory)
+MakeXLSAnalyze::MakeXLSAnalyze(TimeAnalyzer* timeAnalyzer, ProcessVisioner* visioner, AbstractSystemTimer* &timer, const std::string& directory)
 {
 	SetAnalyzer(timeAnalyzer);
 	SetVisioner(visioner);
 	SetSavingDirectory(directory);
+	this->timer = &timer;
 }
 
+#define Type(type) #type
 void MakeXLSAnalyze::Action()
 {
 	visioner->makeSnapshot();
-	FinalAnalyzeProcedure::AnalyzeProcedure(*visioner, directory);
+	StorageReader* reader = new BinaryReader();
+	std::vector<std::vector<TimeAnalyzedProcess>> parsedSnapshots;
+	for (auto filepath : std::filesystem::directory_iterator(".")) {
+		std::string filename = filepath.path().string();
+		if (std::regex_match(filename, std::regex("\\.\\\\.+\\" DEFAULT_SNAPSHOT_FORMAT "$"))) {
+			auto parsedSnapshot = reader->ReadStorage(filename);
+			std::vector<TimeAnalyzedProcess> timeParsedSnapshot;
+			for (auto parsedProcess : parsedSnapshot) {
+				timeParsedSnapshot.push_back(TimeAnalyzedProcess(parsedProcess));
+			}
+			parsedSnapshots.push_back(timeParsedSnapshot);
+		}
+	}
+	delete reader;
+	XLSStorage ds;
+	//midAnalyzer.Analyze(*visioner, parsedSnapshots);
+	auto processInterfaceBuilder = TimeProcessInterfaceBuilder();
+	if((*timer)->GetType() == Type(YieldingSystemTimer))
+		processInterfaceBuilder.SetTimerRate((*timer)->GetTimerRate() / ((YieldingSystemTimer*)*timer)->GetActionCounts());
+	else if((*timer)->GetType() == Type(SystemTimer))
+		processInterfaceBuilder.SetTimerRate((*timer)->GetTimerRate());
+	std::map<DWORD, TimeAnalyzedProcess> procs = MediateProcesses<TimeAnalyzedProcess>(parsedSnapshots, &processInterfaceBuilder);
+	ds.SaveToFile(procs, directory);
 	visioner->closeProcs();
 }
 

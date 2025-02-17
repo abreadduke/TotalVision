@@ -13,65 +13,16 @@ digits getDigitsFromNumber(unsigned int number) {
 	}
 }
 std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string* staticinfo) {
-	//ProcessAnalyzer analyzer(visioner);
-	//CpuAnalyzer cpuanalyzer;
-	//cpuanalyzer.MakeStatementSnapshot();
-	//analyzer.MakeStatementSnapshot();
-	//std::this_thread::sleep_for(std::chrono::milliseconds(160));
-	//auto analyzedtimes = analyzer.AnalyzeTimes();
-	//cpuanalyzer.AnalyzeCpuUsage();
-	//unsigned long long cpuusagetimes = cpuanalyzer.GetKernel() + cpuanalyzer.GetUser();
 	std::string buffer;
-	//find max file path length to padding the parameters
 	char filename[filenamelength];
 	unsigned short maxfilename = 0;
 	unsigned int maxPIDSize = 0;
-	/*
-	for (HANDLE process : visioner.getProcs()) {
-		char filename[filenamelength];
-		if (GetProcessImageFileNameA(process, filename, sizeof(filename))) {
-			maxfilename = (unsigned short)std::fmaxf((float)std::regex_replace(filename, std::regex("\\\\Device\\\\HarddiskVolume3"), "C:").size(), (float)maxfilename);
-		}
-	}
-	*/
 	for (auto pinfo : timeanalyzer.GetAnalyzed()) {
 		maxfilename = (unsigned short)std::fmaxf(pinfo.second.processName.length(), maxfilename);
 		maxPIDSize = max(maxPIDSize, pinfo.first);
 	}
-	/*
-	unsigned long long allprocstimes = 0;
-	for (auto analyzedtime : analyzedtimes) {
-		allprocstimes += analyzedtime.second;
-	}
-	*/
 	buffer = printHeaders(maxfilename);
 	double allcpu = 0;
-	/*
-	for (HANDLE process : visioner.getProcs()) {
-		if (GetProcessImageFileNameA(process, filename, sizeof(filename))) {
-			std::string rfilename = std::regex_replace(filename, std::regex("\\\\Device\\\\HarddiskVolume3"), "C:");
-			buffer += rfilename;
-			for (int i = 0; i < maxfilename - rfilename.size(); i++)
-				buffer += ' ';
-			for (int i = 0; i < this->indents; i++)
-				buffer += '\t';
-			PROCESS_MEMORY_COUNTERS_EX memorycounters = { 0 };
-			memorycounters.cb = sizeof(memorycounters);
-			K32GetProcessMemoryInfo(process, (PROCESS_MEMORY_COUNTERS*)&memorycounters, memorycounters.cb);
-			buffer += std::to_string(memorycounters.WorkingSetSize / std::pow(BYTENEXTDIS, 2)) + "MB";
-			for (int i = 0; i < this->indents; i++)
-				buffer += '\t';
-			//get system time for define cpu usage
-			auto analyzedtimesfound = analyzedtimes.find(GetProcessId(process));
-			unsigned long long calculatedpubliccputimes = allprocstimes + cpuanalyzer.GetIdle() * 100;
-			if (analyzedtimesfound != analyzedtimes.end() && calculatedpubliccputimes != 0)
-				buffer += std::to_string(((double)analyzedtimesfound->second / calculatedpubliccputimes)
-					* 100) + "%\n";
-			else buffer += "0%\n";
-			allcpu += ((double)analyzedtimesfound->second / calculatedpubliccputimes) * 100;
-		}
-	}
-	*/
 	for (auto pinfo : timeanalyzer.GetAnalyzed()) {
 		buffer += std::to_string(pinfo.first) + TAB;
 		std::string rfilename = pinfo.second.processName;
@@ -87,7 +38,6 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 		for (int i = 0; i < this->indents; i++)
 			buffer += TAB;
 		//get system time for define cpu usage
-		//buffer += std::to_string(pinfo.second.processCPUPersents) + "%\n";
 		buffer += std::to_string(pinfo.second.processCPUPersents) + '%';
 		complete_string_to_console(buffer);
 		allcpu += pinfo.second.processCPUPersents;
@@ -95,7 +45,6 @@ std::string ProcessPrinter::printProcess(TimeAnalyzer& timeanalyzer, std::string
 	if (staticinfo != nullptr) {
 		for (int i = 0; i < maxfilename; i++)
 			*staticinfo += '=';
-		//*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu) + "%\n";
 		*staticinfo += "\nGlobal CPU usage: " + std::to_string(allcpu);
 		complete_string_to_console((*staticinfo));
 	}
@@ -121,6 +70,7 @@ ConsoleUI::ConsoleUI() {
 	thisconsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	timeAnalyzer.SetBufferSize(50);
 	timeAnalyzer.SetSnapshotsCount(15);
+	timeAnalyzer.SetAnalyzerOffset(2);
 	MakeActionHandlerThread();
 	MakeProcessAnalyzingThread();
 }
@@ -183,11 +133,6 @@ void ConsoleUI::DrawUI() {
 	}
 	cursormutex.unlock();
 	nextlineaddress = nextlineaddress > 0 ? nextlineaddress : 0;
-	//write out to the console buffer
-	//DWORD d;
-	//CONSOLE_SCREEN_BUFFER_INFO consoleBuffer;
-	//GetConsoleScreenBufferInfo(thisconsole, &consoleBuffer);
-	//FillConsoleOutputCharacter(thisconsole, ' ', consoleBuffer.dwSize.X * consoleBuffer.dwSize.Y, cursorpos, &d);
 	std::lock_guard<std::mutex> consoleLock(consoleMutex);
 	SetConsoleCursorPosition(thisconsole, cursorpos);
 	WriteConsoleA(thisconsole, printedinfo.c_str() + nextlineaddress * sizeof(char), eofdynamicpinfo * sizeof(char), NULL, NULL);
@@ -263,7 +208,6 @@ void ConsoleUI::ButtonActionsHandler() {
 		}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(20));
-		std::this_thread::yield();
 	}
 }
 
@@ -274,18 +218,16 @@ void ConsoleUI::ProcessAnalyzing()
 			try {
 				visioner->makeSnapshot();
 				timeAnalyzerMutex.lock();
-				//timeAnalyzer.ClearResults();
 				timeAnalyzer.Analyze(*visioner);
-				//timeAnalyzer.AnalyzeMidValues(*visioner, 10, 5);
 				timeAnalyzerMutex.unlock();
 				
 			}
 			catch (std::runtime_error& error) {
 				std::cout << error.what() << std::endl;
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			visioner->closeProcs();
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 }
 
@@ -339,7 +281,6 @@ void MakeBinaryAnalyzedFile::Execute(ConsoleUI* consoleui) {
 	DataStorage* ds = new BinaryStorage();
 	std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	std::tm* nowDate = std::localtime(&time);
-	//
 	std::string filepath = "parsed_snapshot-" + std::to_string(nowDate->tm_sec) + "." + std::to_string(nowDate->tm_min) + "." + std::to_string(nowDate->tm_hour) + "." + std::to_string(nowDate->tm_mday) + "." + std::to_string(nowDate->tm_mon + 1) + "." + std::to_string(nowDate->tm_year + 1900) + DEFAULT_SNAPSHOT_FORMAT;
 	consoleui->timeAnalyzerMutex.lock();
 	SaveToFile((TimeAnalyzer&)*(consoleui->GetAnalyzer()), ds, filepath);

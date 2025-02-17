@@ -58,7 +58,9 @@ int main() {
 	HelpCommand helpCommand;
 	AbstractSystemTimer* timer = new SystemTimer();
 	timerCommand.SetTimer(timer);
+	std::mutex mainThreadLocker;
 	ThreadDistributor *ProgrammInterfaceThreadDistr = new ThreadDistributor();
+	ProgrammInterfaceThreadDistr->lockOtherThreads = &mainThreadLocker;
 	visc.SetDistributor(ProgrammInterfaceThreadDistr);
 	reader.AddCommandHandler(&visc);
 	reader.AddCommandHandler(&timerCommand);
@@ -73,7 +75,7 @@ int main() {
 	TimeAnalyzer timerAnalyzer;
 	ProcessVisioner visioner;
 	MakeSnapshotAnalyze timerAction;
-	MakeXLSAnalyze endignTimerAction(&timerAnalyzer, &visioner, FINAL_EXEL_TABLE_PATH);
+	MakeXLSAnalyze endignTimerAction(&timerAnalyzer, &visioner, timer, FINAL_EXEL_TABLE_PATH);
 	timerAction.SetAnalyzer(&timerAnalyzer);
 	timerAction.SetVisioner(&visioner);
 	timerAction.SetSavingDirectory(".");
@@ -98,6 +100,14 @@ int main() {
 			reader.SetCommand(command);
 			if (!reader.ExecuteCommand()) {
 				std::cout << unknown_command_message << command << std::endl;
+			}
+		}
+		else {
+			try {
+				std::lock_guard<std::mutex> thread_locker(mainThreadLocker);
+			}
+			catch (std::system_error &error){
+				std::cout << error.what() << std::endl;
 			}
 		}
 	}
