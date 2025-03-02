@@ -1,5 +1,6 @@
 temp/
 *.xlsx
+*.xls
 *.psb
 *.timer
 /.vs/
