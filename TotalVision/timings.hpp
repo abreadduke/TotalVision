@@ -106,6 +106,7 @@ public:
 	virtual void SaveAsYieldingSystemTimer(YieldingSystemTimer* yieldingSystemTimer) = 0;
 	virtual void SaveAsSystemTimer(SystemTimer* systemtimer) = 0;
 };
+//Deprecated
 class TimerStateSaver : public ITimerStateSaver {
 public:
 	TimerStateSaver(AbstractSystemTimer* &timer, std::string filepath);
@@ -118,6 +119,7 @@ protected:
 	std::string filepath = "";
 	AbstractSystemTimer** timer = nullptr;
 };
+//Deprecated
 class TimerStateReader : public ITimerStateReader {
 public:
 	TimerStateReader(std::string filename);

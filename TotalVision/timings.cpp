@@ -48,7 +48,7 @@ void MakeSnapshotAnalyze::SetVisioner(ProcessVisioner* visioner) {
 }
 void MakeSnapshotAnalyze::Action()
 {
-	if (timeAnalyzer == nullptr) return;
+	if (timeAnalyzer == nullptr || visioner == nullptr) return;
 	visioner->makeSnapshot();
 	timeAnalyzer->Analyze(*visioner);
 	DataStorage* ds = new BinaryStorage();

@@ -190,7 +190,7 @@ std::vector<TimeAnalyzer::AnalyzedProcess> BinaryReader::ReadStorage(const std::
 			readStream.read((char*)&processMemoryUsage, sizeof(size_t));
 			readStream.read((char*)&processCPUPersents, sizeof(double));
 			redProcs.push_back({std::string(pProcessName), processMemoryUsage, processCPUPersents});
-			delete pProcessName;
+			delete[] pProcessName;
 			pProcessName = nullptr;
 		}
 		readStream.close();

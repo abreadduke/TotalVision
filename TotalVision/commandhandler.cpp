@@ -98,9 +98,9 @@ bool TimerCommand::ExecuteCommand() {
 		if (std::regex_search(command, yieldingTimerCountsMatch, std::regex(" +\\/c +(\\d+) *"))) {
 			timerCounts = atoi(yieldingTimerCountsMatch[1].str().c_str());
 		}
-		char seconds = atoi(match[1].str().c_str());
-		char minutes = atoi(match[2].str().c_str());
-		char hours = atoi(match[3].str().c_str());
+		time_t seconds = atoi(match[1].str().c_str());
+		time_t minutes = atoi(match[2].str().c_str());
+		time_t hours = atoi(match[3].str().c_str());
 		seconds = 59 < seconds ?  59 : (0 > seconds ? 0 : seconds);
 		minutes = 59 < minutes ? 59 : (0 > minutes ? 0 : minutes);
 		//hours = 23 < hours ? 23 : (0 > hours ? 0 : hours);
@@ -140,16 +140,16 @@ void TimerCommand::SetTimer(AbstractSystemTimer* &timer)
 	(*this->timer)->SetTimerAction(&timerAction);
 }
 TimerCommand::TimerCommand() : Command() {
-	if (!this->timer) {
-		this->timer = new AbstractSystemTimer*;
-		(*this->timer) = new YieldingSystemTimer();
-		MakeSnapshotAnalyze timerAction;
-		(*this->timer)->SetTimerAction(&timerAction);
-	}
+	//if (!this->timer) {
+	//	this->timer = new AbstractSystemTimer*;
+	//	(*this->timer) = new YieldingSystemTimer();
+	//	MakeSnapshotAnalyze timerAction;
+	//	(*this->timer)->SetTimerAction(&timerAction);
+	//}
 }
-TimerCommand::~TimerCommand() {
-	delete this->timer;
-}
+//TimerCommand::~TimerCommand() {
+//	delete this->timer;
+//}
 TimeFacadeSystem::TimeFacadeSystem()
 {
 }
@@ -314,7 +314,7 @@ bool HelpCommand::ExecuteCommand()
 		char* buffer = new char[bufferSize];
 		LoadStringA(nullptr, HELP_MESSAGE, buffer, bufferSize);
 		std::cout << buffer << std::endl;
-		delete buffer;
+		delete[] buffer;
 		return true;
 	}
 	return false;

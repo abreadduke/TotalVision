@@ -49,7 +49,6 @@ public:
 	virtual bool ExecuteCommand() override;
 	virtual AbstractSystemTimer* GetTimer() const;
 	virtual void SetTimer(AbstractSystemTimer* &timer);
-	~TimerCommand();
 private:
 	AbstractSystemTimer** timer = nullptr;
 };
